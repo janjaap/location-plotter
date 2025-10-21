@@ -1,0 +1,50 @@
+:root {
+  --needle-width: 4px;
+  --needle-height: 24px;
+}
+
+.liveTrack {
+  display: flex;
+  position: relative;
+  width: 100%;
+  container-type: size;
+  z-index: 0;
+}
+
+.mobMarker {
+  position: absolute;
+  font-family: monospace;
+  font-size: smaller;
+  width: max-content;
+  transform: translate(50cqw, 50cqh);
+  padding-left: 0.4rem;
+  z-index: 1;
+}
+
+.needle {
+  position: absolute;
+  width: var(--needle-width);
+  height: calc(2 * var(--needle-height));
+  transform: translate(10cqw, 90cqh) rotateZ(0deg);
+  transform-origin: center;
+  transition: transform 0.2s ease-in-out;
+  z-index: 1;
+}
+
+.needle::before {
+  content: "";
+  position: absolute;
+  border-left: var(--needle-width) solid transparent;
+  border-right: var(--needle-width) solid transparent;
+  border-bottom: var(--needle-height) solid #EF5052;
+}
+
+.needle::after {
+  content: "";
+  position: absolute;
+  top: var(--needle-height);
+  border-left: var(--needle-width) solid transparent;
+  border-right: var(--needle-width) solid transparent;
+  border-bottom: var(--needle-height) solid #fff;
+  transform: rotateZ(180deg);
+}
