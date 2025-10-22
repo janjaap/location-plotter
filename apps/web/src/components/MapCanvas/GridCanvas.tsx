@@ -5,8 +5,10 @@ import styles from './MapCanvas.module.css';
 
 interface Props {
   center: Coordinate | null;
+  zoomLevel: number;
 }
-export const GridCanvas = ({ center }: Props) => {
+
+export const GridCanvas = ({ center, zoomLevel }: Props) => {
   const gridCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -14,10 +16,12 @@ export const GridCanvas = ({ center }: Props) => {
 
     const grid = new CanvasGrid(center, gridCanvasRef.current);
 
+    grid.subdivisions = zoomLevel;
+    grid.zoomLevel = zoomLevel;
     grid.init();
 
     return grid.teardown;
-  }, [center]);
+  }, [center, zoomLevel]);
 
   return <canvas className={styles.gridCanvas} ref={gridCanvasRef}></canvas>;
 }

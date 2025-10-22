@@ -17,6 +17,6 @@ export function ddToDmsFormatted(coordinate: number) {
   return `${zeroPad(degrees)}° ${minutes}' ${seconds.toFixed(2)}"`;
 }
 
-export function coordsToDmsFormatted(degrees: number, minutes: number, seconds?: number) {
-  return `${zeroPad(degrees)}° ${minutes}' ${seconds !== undefined && seconds >= 0 ? `${seconds.toFixed(2)}` : '0'}"`;
+export function coordsToDmsFormatted(degrees: number, minutes: number, seconds?: number, decimalPlaces = 2) {
+  return `${zeroPad(degrees)}° ${minutes}' ${seconds !== undefined && seconds >= 0 ? `${seconds.toFixed(decimalPlaces)}` : '0'}"`;
 }

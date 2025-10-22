@@ -1,4 +1,4 @@
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, type ChangeEvent } from "react";
 import { ClientEvents, ServerEvents, type StartPositionPayload } from "socket/types";
 import { useSocketEvent } from "../../hooks/useSocketEvent";
 import { clientSocket } from "../../lib/clientSocket";
@@ -67,7 +67,7 @@ export const ParamsForm = () => {
 
   }
 
-  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const { name } = event.target;
     let value: number | string = event.target.value;
 

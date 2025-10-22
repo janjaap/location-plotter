@@ -8,10 +8,14 @@ export class CanvasTrack extends GeographicalArea {
     super(center, canvas);
   }
 
-  positionOnTrack: Coordinate | null = null;
+  private positionOnTrack: Coordinate | null = null;
 
   init = () => {
     clientSocket.on(ServerEvents.POSITION, this.drawLeg);
+  }
+
+  getCoordinateFromSeconds = (latSeconds: number, longSeconds: number) => {
+    // here be logic
   }
 
   drawLeg = ({ position }: PositionPayload) => {
@@ -20,32 +24,47 @@ export class CanvasTrack extends GeographicalArea {
       return;
     }
 
-    const pixelsPerSecond = Math.round(this.gridColumnWidth / 60);
+    const pixelsPerSecond = this.gridColumnWidth / 60;
     const recordedPosition = this.positionOnTrack;
 
     this.draw(() => {
+      const { seconds: centerLatSeconds } = ddToDms(this.center.lat);
+      const { seconds: centerLongSeconds } = ddToDms(this.center.long);
+
       const { seconds: latSeconds } = ddToDms(position.lat);
       const { seconds: longSeconds } = ddToDms(position.long);
 
       const { seconds: prevLatSeconds } = ddToDms(recordedPosition.lat);
       const { seconds: prevLongSeconds } = ddToDms(recordedPosition.long);
 
+      const xDiff = (prevLatSeconds - latSeconds) * pixelsPerSecond * this.zoomLevel; // > 0 means move down, < 0 means move up
+      const yDiff = (prevLongSeconds - longSeconds) * pixelsPerSecond * this.zoomLevel; // > 0 means move left, < 0 means move right
+
+      // how far is previous point from center
+      const prevX = ((centerLatSeconds - prevLatSeconds) * pixelsPerSecond) + (this.canvas.width / 2);
+      const prevY = ((centerLongSeconds - prevLongSeconds) * pixelsPerSecond) + (this.canvas.height / 2);
+
       console.log({
-        latSeconds: Math.round(latSeconds),
-        longSeconds: Math.round(longSeconds),
-        prevLatSeconds: Math.round(prevLatSeconds),
-        prevLongSeconds: Math.round(prevLongSeconds),
+        // gridColumnWidth: this.gridColumnWidth,
+        // pixelsPerSecond,
+        xDiff,
+        yDiff,
+        prevX,
+        prevY,
+        newX: Math.round(prevX + xDiff - (this.canvas.width / 2)),
+        newY: Math.round(prevY + yDiff - (this.canvas.height / 2)),
+        // zoomLevel: this.zoomLevel,
       });
 
-      const xDiff = (prevLatSeconds - latSeconds) * pixelsPerSecond; // > 0 means move down, < 0 means move up
-      const yDiff = (prevLongSeconds - longSeconds) * pixelsPerSecond; // > 0 means move left, < 0 means move right
-
-      // console.log({ xDiff, yDiff });
       // Draw the leg
-      // this.context.beginPath();
-      // this.context.moveTo(this.positionOnTrack!.l, this.positionOnTrack!.y);
-      // this.context.lineTo(this.positionOnTrack!.x + xDistance, this.positionOnTrack!.y + yDistance);
-      // this.context.stroke();
+      this.context.strokeStyle = '#ff0000';
+      this.context.moveTo(Math.round(prevX), Math.round(prevY));
+      this.context.beginPath();
+      this.context.lineTo(
+        Math.round(prevX + xDiff - (this.canvas.width / 2)),
+        Math.round(prevY + yDiff - (this.canvas.height / 2)),
+      );
+      this.context.stroke();
     });
 
     this.positionOnTrack = position;

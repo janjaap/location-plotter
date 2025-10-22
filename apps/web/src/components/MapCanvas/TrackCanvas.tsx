@@ -5,9 +5,10 @@ import styles from './MapCanvas.module.css';
 
 interface Props {
   center: Coordinate | null;
+  zoomLevel: number;
 }
 
-export const TrackCanvas = ({ center }: Props) => {
+export const TrackCanvas = ({ center, zoomLevel }: Props) => {
   const trackCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -15,10 +16,12 @@ export const TrackCanvas = ({ center }: Props) => {
 
     const canvas = new CanvasTrack(center, trackCanvasRef.current);
 
+    canvas.zoomLevel = zoomLevel;
+
     canvas.init();
 
     return canvas.teardown;
-  }, [center]);
+  }, [center, zoomLevel]);
 
   if (!center) return null;
 

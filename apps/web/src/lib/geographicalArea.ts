@@ -1,25 +1,28 @@
 import type { Coordinate } from "socket/types";
+import type { FromTo } from "../types";
 
 export abstract class GeographicalArea {
   /**
    * Number of vertical degree indicators visible on the canvas
    */
-  visibleLongitudeDegrees: number = 3;
+  private _visibleLongitudeDegrees = 3;
   /**
    * Number of horizontal degree indicators visible on the canvas
    */
-  visibleLatitudeDegrees: number = 3;
+  private _visibleLatitudeDegrees = 3;
 
-  canvas: HTMLCanvasElement;
-  context!: CanvasRenderingContext2D;
+  protected canvas: HTMLCanvasElement;
+  protected context!: CanvasRenderingContext2D;
 
   /**
    * Starting location and center of the geographical area
    */
-  center: Coordinate;
+  private _center: Coordinate;
+
+  private _zoomLevel = 1;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
-    this.center = center;
+    this._center = center;
     this.canvas = canvas;
 
     const context = canvas.getContext('2d');
@@ -36,11 +39,12 @@ export abstract class GeographicalArea {
   }
 
   protected drawInBackground = (drawFunc: () => void) => {
+    this.context.save();
     this.context.globalCompositeOperation = 'destination-over';
 
     this.draw(drawFunc)
 
-    this.context.globalCompositeOperation = 'source-over';
+    this.context.restore();
   }
 
   protected draw = (drawFunc: () => void) => {
@@ -51,12 +55,39 @@ export abstract class GeographicalArea {
     this.context.restore();
   }
 
+  get visibleLongitudeDegrees() {
+    return this._visibleLongitudeDegrees;
+  }
+
+  get visibleLatitudeDegrees() {
+    return this._visibleLatitudeDegrees;
+  }
+
   get gridColumnWidth() {
-    return Math.round(this.canvas.width / this.visibleLongitudeDegrees);
+    return (this.canvas.width / this.visibleLongitudeDegrees) * this._zoomLevel;
   }
 
   get gridRowHeight() {
-    return Math.round(this.canvas.height / this.visibleLatitudeDegrees);
+    return (this.canvas.height / this.visibleLatitudeDegrees) * this._zoomLevel;
+  }
+
+  get center() {
+    return this._center;
+  }
+
+  get zoomLevel() {
+    return this._zoomLevel;
+  }
+
+  set zoomLevel(value: number) {
+    this._zoomLevel = value;
+  }
+
+  drawLine = ({ from, to }: FromTo) => {
+    this.context.beginPath();
+    this.context.moveTo(Math.round(from.x), Math.round(from.y));
+    this.context.lineTo(Math.round(to.x), Math.round(to.y));
+    this.context.closePath();
   }
 
   handleResize = () => {

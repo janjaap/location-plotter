@@ -1,16 +1,20 @@
 canvas {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.mapCanvasContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .canvasContainer {
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: hidden;
 }
 
 .gridCanvas {
@@ -22,5 +26,38 @@ canvas {
 .trackCanvas {
   image-rendering: pixelated;
   background-color: transparent;
-  z-index: 1;
+  z-index: 2;
+}
+
+.gridCanvasForm {
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+  width: 16rem;
+  position: absolute;
+  top: 100%;
+  width: 100%;
+
+  form {
+    padding: 1rem 0 0;
+    display: inline-flex;
+    gap: 2.5rem;
+    flex-direction: row;
+
+    >* {
+      width: 33.3333%;
+    }
+
+    input {
+      padding: 0;
+      width: 100%;
+    }
+  }
+}
+
+.inlineLabel {
+  align-items: center;
+  justify-content: space-between;
+  display: inline-flex;
+  width: 100%;
 }

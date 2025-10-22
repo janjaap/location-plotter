@@ -3,26 +3,3 @@
   gap: 1rem;
   flex-direction: column;
 }
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding-bottom: 10rem;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-  font-size: 0.9rem;
-}
-
-input {
-  flex: 1;
-  padding: 0.5em;
-}
-
-[type='submit'] {
-  flex: 1 0 auto;
-}
