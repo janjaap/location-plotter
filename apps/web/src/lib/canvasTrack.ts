@@ -8,106 +8,47 @@ export class CanvasTrack extends GeographicalArea {
     super(center, canvas);
   }
 
-  private positionOnTrack: Coordinate | null = null;
+  reset = () => {
+    this.context.beginPath();
+    this.context.clearRect(-this.canvas.width / 2, -this.canvas.height / 2, this.canvas.width, this.canvas.height);
+  }
 
   init = () => {
     clientSocket.on(ServerEvents.POSITION, this.drawLeg);
+    clientSocket.on(ServerEvents.RESET, this.reset);
   }
 
-  getCoordinateFromSeconds = (latSeconds: number, longSeconds: number) => {
-    // here be logic
+  getGridCoordinate = (coordinate: Coordinate) => {
+    const pixelsPerSecond = this.gridColumnWidth / 60;
+
+    const { seconds: latSeconds, minutes: latMinutes } = ddToDms(coordinate.lat);
+    const { seconds: longSeconds, minutes: longMinutes } = ddToDms(coordinate.long);
+
+    const { seconds: centerLatSeconds, minutes: centerLatMinutes } = ddToDms(this.center.lat);
+    const { seconds: centerLongSeconds, minutes: centerLongMinutes } = ddToDms(this.center.long);
+
+    const longSecondsDiff = (longSeconds + (longMinutes * 60)) - (centerLongSeconds + (centerLongMinutes * 60));
+    const latSecondsDiff = (centerLatSeconds + (centerLatMinutes * 60)) - (latSeconds + (latMinutes * 60));
+
+    const x = Math.round(longSecondsDiff * pixelsPerSecond);
+    const y = Math.round(latSecondsDiff * pixelsPerSecond);
+
+    return { x, y };
   }
 
   drawLeg = ({ position }: PositionPayload) => {
-    if (!this.positionOnTrack) {
-      this.positionOnTrack = position;
-      return;
-    }
-
-    const pixelsPerSecond = this.gridColumnWidth / 60;
-    const recordedPosition = this.positionOnTrack;
-
     this.draw(() => {
-      const { seconds: centerLatSeconds } = ddToDms(this.center.lat);
-      const { seconds: centerLongSeconds } = ddToDms(this.center.long);
+      const { x, y } = this.getGridCoordinate(position);
 
-      const { seconds: latSeconds } = ddToDms(position.lat);
-      const { seconds: longSeconds } = ddToDms(position.long);
-
-      const { seconds: prevLatSeconds } = ddToDms(recordedPosition.lat);
-      const { seconds: prevLongSeconds } = ddToDms(recordedPosition.long);
-
-      const xDiff = (prevLatSeconds - latSeconds) * pixelsPerSecond * this.zoomLevel; // > 0 means move down, < 0 means move up
-      const yDiff = (prevLongSeconds - longSeconds) * pixelsPerSecond * this.zoomLevel; // > 0 means move left, < 0 means move right
-
-      // how far is previous point from center
-      const prevX = ((centerLatSeconds - prevLatSeconds) * pixelsPerSecond) + (this.canvas.width / 2);
-      const prevY = ((centerLongSeconds - prevLongSeconds) * pixelsPerSecond) + (this.canvas.height / 2);
-
-      console.log({
-        // gridColumnWidth: this.gridColumnWidth,
-        // pixelsPerSecond,
-        xDiff,
-        yDiff,
-        prevX,
-        prevY,
-        newX: Math.round(prevX + xDiff - (this.canvas.width / 2)),
-        newY: Math.round(prevY + yDiff - (this.canvas.height / 2)),
-        // zoomLevel: this.zoomLevel,
-      });
-
-      // Draw the leg
-      this.context.strokeStyle = '#ff0000';
-      this.context.moveTo(Math.round(prevX), Math.round(prevY));
-      this.context.beginPath();
-      this.context.lineTo(
-        Math.round(prevX + xDiff - (this.canvas.width / 2)),
-        Math.round(prevY + yDiff - (this.canvas.height / 2)),
-      );
+      this.context.strokeStyle = 'white';
+      this.context.lineTo(Math.round(x), Math.round(y));
       this.context.stroke();
     });
-
-    this.positionOnTrack = position;
   }
 
   teardown = () => {
     clientSocket.off(ServerEvents.POSITION, this.drawLeg);
+
     super.teardown();
   }
 }
-
-// export function canvasTrack(canvasInstance: HTMLCanvasElement) {
-//   const context = canvasInstance.getContext('2d');
-
-//   if (!context) {
-//     throw new Error('Could not get canvas context');
-//   }
-
-//   clientSocket.on(ServerEvents.POSITION, (position) => {
-//     const drawLeg = () => {
-//       context.save();
-
-//       context.restore();
-//     };
-
-//     const { x, y } = position;
-//   });
-
-//   const centerContextToCoordinate = () => {
-//     canvasInstance.width = canvasInstance.clientWidth;
-//     canvasInstance.height = canvasInstance.clientHeight;
-//     context.translate(canvasInstance.width / 2, canvasInstance.height / 2);
-//   }
-
-//   const draw = () => {
-//     centerContextToCoordinate();
-//   };
-
-//   const teardown = () => {
-//     globalThis.window.removeEventListener('resize', draw);
-//   }
-
-//   globalThis.window.addEventListener('resize', draw);
-
-//   return { draw, teardown };
-// }

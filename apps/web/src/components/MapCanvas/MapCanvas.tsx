@@ -34,11 +34,13 @@ export const MapCanvas = () => {
           <div>
             <div className={styles.inlineLabel}>
               <label>Zoom level ({formState.zoomLevel})</label>
-              {formState.zoomLevel !== initialState.zoomLevel && (
-                <button className="small" type="button" onClick={() => setFormState({ ...formState, zoomLevel: initialState.zoomLevel })}>
-                  Reset
-                </button>
-              )}
+              <button
+                disabled={formState.zoomLevel === initialState.zoomLevel}
+                className="small"
+                type="button"
+                onClick={() => setFormState({ ...formState, zoomLevel: initialState.zoomLevel })}>
+                Reset
+              </button>
             </div>
 
             <input type="range" min="1" max="10" step="0.1" value={formState.zoomLevel} onChange={handleZoomLevelChange} />

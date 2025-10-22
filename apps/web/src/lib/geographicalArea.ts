@@ -21,6 +21,8 @@ export abstract class GeographicalArea {
 
   private _zoomLevel = 1;
 
+  abstract reset(): void;
+
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     this._center = center;
     this.canvas = canvas;
@@ -33,6 +35,10 @@ export abstract class GeographicalArea {
 
     this.context = context;
 
+    this.init();
+  }
+
+  init = () => {
     this.centerContextToCoordinate();
 
     globalThis.window.addEventListener('resize', this.handleResize);
@@ -88,6 +94,7 @@ export abstract class GeographicalArea {
     this.context.moveTo(Math.round(from.x), Math.round(from.y));
     this.context.lineTo(Math.round(to.x), Math.round(to.y));
     this.context.closePath();
+    this.context.stroke();
   }
 
   handleResize = () => {

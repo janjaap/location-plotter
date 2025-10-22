@@ -8,7 +8,6 @@ import styles from './LiveTrack.module.css';
 export const LiveTrack = () => {
   const [center, setCenter] = useState<Coordinate | null>(null);
   const [heading, setHeading] = useState<number | null>(null);
-  const [bearing, setBearing] = useState<number>(0);
 
   useSocketEvent(ServerEvents.INIT, (initPosition, _distance, initHeading) => {
     setCenter(initPosition);
@@ -22,7 +21,6 @@ export const LiveTrack = () => {
   useSocketEvent(ServerEvents.RESET, ({ heading }) => {
     setHeading(heading);
     setCenter(null);
-    setBearing(0);
   });
 
   useSocketEvent(ServerEvents.STOPPED, () => {
@@ -32,13 +30,12 @@ export const LiveTrack = () => {
   useSocketEvent(ServerEvents.POSITION, ({ heading: currentHeading }) => {
     if (heading === null) return;
 
-    const newBearing = heading - currentHeading;
-    setBearing(newBearing);
+    setHeading(currentHeading);
   });
 
   return (
     <div className={styles.liveTrack}>
-      {heading && <span className={styles.needle} style={{ transform: `translate(97cqw, 1cqh) rotateZ(${heading + bearing}deg)` }} />}
+      {heading && <span className={styles.needle} style={{ transform: `translate(97cqw, 1cqh) rotateZ(${heading}deg)` }} />}
 
       {center && (
         <div className={styles.mobMarker}>

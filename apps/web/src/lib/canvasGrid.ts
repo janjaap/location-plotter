@@ -25,7 +25,7 @@ export class CanvasGrid extends GeographicalArea {
     super(center, canvas);
   }
 
-  public init = () => {
+  init = () => {
     this.redrawGrid();
 
     globalThis.window.addEventListener('resize', this.handleResize);
@@ -51,6 +51,10 @@ export class CanvasGrid extends GeographicalArea {
       { length: this.visibleLatitudeDegrees },
       (_, i) => i - Math.floor(this.visibleLatitudeDegrees / 2),
     );
+  }
+
+  reset = () => {
+    this.context.reset();
   }
 
   // bounds calculated from center point (0,0) in the middle of the canvas
@@ -99,7 +103,6 @@ export class CanvasGrid extends GeographicalArea {
     this.drawInBackground(() => {
       this.context.strokeStyle = 'rgb(66, 69, 72)';
       this.drawLine({ from, to });
-      this.context.stroke();
     });
   }
 
@@ -109,7 +112,6 @@ export class CanvasGrid extends GeographicalArea {
       this.context.setLineDash([4]);
       this.context.lineDashOffset = 2;
       this.drawLine({ from, to });
-      this.context.stroke();
     });
   };
 
@@ -162,7 +164,7 @@ export class CanvasGrid extends GeographicalArea {
       }
 
       for (let i = 0; i <= this.subdivisions; i++) {
-        const subdivYOffset = yOffset + (subdivHeight * i);
+        const subdivYOffset = yOffset - (subdivHeight * i);
         const fitsWithinBounds = subdivYOffset > this.bounds.top && subdivYOffset < this.bounds.bottom;
 
         if (fitsWithinBounds && subdivYOffset !== yOffset) {
@@ -177,7 +179,7 @@ export class CanvasGrid extends GeographicalArea {
             },
           });
 
-          const label = coordsToDmsFormatted(degrees, minutes - linePosition, 60 / (this.subdivisions + 1) * i, 0);
+          const label = coordsToDmsFormatted(degrees, minutes - linePosition - 1, 60 / (this.subdivisions + 1) * i, 0);
           this.drawGridLineLabel(label, labelX, subdivYOffset, 'latitude', '25%');
         }
       }

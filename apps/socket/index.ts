@@ -17,7 +17,7 @@ const sockets = new Set<Socket>();
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
 
 const POSITION_UPDATE_INTERVAL = 100; // ms
-const MAX_BEARING = 120; // degrees
+const MAX_BEARING = 90; // degrees
 
 let initialPosition: StartPositionPayload;
 let currentPosition: Coordinate;
@@ -72,10 +72,14 @@ io.on(
       generateNewHeading();
 
       positionInterval = setInterval(() => {
-        const newPosition = updatePosition(currentPosition.lat, currentPosition.long, speed, currentHeading, POSITION_UPDATE_INTERVAL / 1000);
-        const distance = getDistance({ lat, long }, newPosition);
-
-        currentPosition = newPosition;
+        currentPosition = updatePosition(
+          currentPosition.lat,
+          currentPosition.long,
+          speed,
+          currentHeading,
+          POSITION_UPDATE_INTERVAL / 1000,
+        );
+        const distance = getDistance({ lat, long }, currentPosition);
 
         socket.emit(ServerEvents.POSITION, { position: currentPosition, distance, heading: currentHeading });
       }, POSITION_UPDATE_INTERVAL);
