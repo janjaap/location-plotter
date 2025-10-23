@@ -43,7 +43,7 @@ export const MapCanvas = () => {
               </button>
             </div>
 
-            <input type="range" min="1" max="10" step="0.1" value={formState.zoomLevel} onChange={handleZoomLevelChange} />
+            <input type="range" min="1" max="20" step="0.1" value={formState.zoomLevel} onChange={handleZoomLevelChange} />
           </div>
         </form>
       </div>

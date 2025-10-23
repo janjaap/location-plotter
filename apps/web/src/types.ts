@@ -8,3 +8,5 @@ export type FromTo = {
     y: number,
   }
 };
+
+export type DMS = { degrees: number; minutes: number; seconds?: number; }

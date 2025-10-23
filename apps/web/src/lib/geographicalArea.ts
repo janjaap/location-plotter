@@ -1,4 +1,4 @@
-import type { Coordinate } from "socket/types";
+import { type Coordinate } from "socket/types";
 import type { FromTo } from "../types";
 
 export abstract class GeographicalArea {
@@ -20,8 +20,7 @@ export abstract class GeographicalArea {
   private _center: Coordinate;
 
   private _zoomLevel = 1;
-
-  abstract reset(): void;
+  private _subdivisions = 1;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     this._center = center;
@@ -87,6 +86,19 @@ export abstract class GeographicalArea {
 
   set zoomLevel(value: number) {
     this._zoomLevel = value;
+  }
+
+  set subdivisions(value: number) {
+    this._subdivisions = value;
+  }
+
+  get subdivisions() {
+    return this._subdivisions;
+  }
+
+  clearCanvas = () => {
+    this.context.beginPath();
+    this.context.clearRect(-this.canvas.width / 2, -this.canvas.height / 2, this.canvas.width, this.canvas.height);
   }
 
   drawLine = ({ from, to }: FromTo) => {

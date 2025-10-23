@@ -1,4 +1,4 @@
-import { useActionState, useEffect, useState, type ChangeEvent } from "react";
+import { useActionState, useEffect, useState, type ChangeEvent, type MouseEvent } from "react";
 import { ClientEvents, ServerEvents, type StartPositionPayload } from "socket/types";
 import { useSocketEvent } from "../../hooks/useSocketEvent";
 import { clientSocket } from "../../lib/clientSocket";
@@ -83,16 +83,19 @@ export const ParamsForm = () => {
 
     updateStateValue(name, Number(value));
 
-    clientSocket.emit(ClientEvents.INIT, { ...formState, [name]: Number(value) });
+    // clientSocket.emit(ClientEvents.INIT, { ...formState, [name]: Number(value) });
   }
 
-  function stopTracking() {
-    clientSocket.emit(ClientEvents.STOP);
+  function stopTracking(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
 
+    clientSocket.emit(ClientEvents.STOP);
     setIsTracking(false);
   }
 
-  function resetTracking() {
+  function resetTracking(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+
     clientSocket.emit(ClientEvents.RESET);
     setFormState(initialPositionState);
   }
@@ -116,20 +119,20 @@ export const ParamsForm = () => {
           <input type="number" name="heading" value={formState.heading} step="1" onChange={handleChange} />
         </label>
 
-        <button type="submit" disabled={isTracking}>Get live track</button>
+        <button type="submit" disabled={isTracking}>Start</button>
+
+        <button disabled={!isTracking} onClick={stopTracking}>
+          Stop
+        </button>
+
+        <button onClick={resetTracking}>
+          Reset
+        </button>
       </form>
 
       <div>
-        Distance: {formState.distance.toFixed(2)} meters
+        Distance: {formState.distance.toFixed(0)} meters
       </div>
-
-      <button disabled={!isTracking} onClick={stopTracking}>
-        Stop track
-      </button>
-
-      <button onClick={resetTracking}>
-        Reset
-      </button>
     </div>
   );
 }

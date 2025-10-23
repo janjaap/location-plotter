@@ -1,6 +1,7 @@
-import type { Coordinate } from "socket/types";
+import { ServerEvents, type Coordinate } from "socket/types";
 import type { FromTo } from "../types";
 import { coordsToDmsFormatted, ddToDms } from "../utils/ddToDms";
+import { clientSocket } from "./clientSocket";
 import { GeographicalArea } from "./geographicalArea";
 
 export class CanvasGrid extends GeographicalArea {
@@ -19,24 +20,16 @@ export class CanvasGrid extends GeographicalArea {
   private gridPadding = 20;
   private labelFontSize = 12;
   private labelMaxWidth = 80;
-  private _subdivisions = 1;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     super(center, canvas);
   }
 
   init = () => {
-    this.redrawGrid();
+    this.reset();
 
     globalThis.window.addEventListener('resize', this.handleResize);
-  }
-
-  set subdivisions(value: number) {
-    this._subdivisions = value;
-  }
-
-  get subdivisions() {
-    return this._subdivisions;
+    clientSocket.on(ServerEvents.RESET, this.reset);
   }
 
   get columnIndices() {
@@ -53,8 +46,9 @@ export class CanvasGrid extends GeographicalArea {
     );
   }
 
-  reset = () => {
-    this.context.reset();
+  set zoomLevel(value: number) {
+    super.zoomLevel = value;
+    this.redrawGrid();
   }
 
   // bounds calculated from center point (0,0) in the middle of the canvas
@@ -67,7 +61,15 @@ export class CanvasGrid extends GeographicalArea {
     };
   }
 
+  reset = () => {
+    this.zoomLevel = 1;
+    this.subdivisions = 1;
+
+    this.redrawGrid();
+  }
+
   redrawGrid = () => {
+    this.clearCanvas();
     this.drawCenterPoint();
     this.drawLongitudeLines();
     this.drawLatitudeLines();
@@ -159,12 +161,12 @@ export class CanvasGrid extends GeographicalArea {
         });
 
         // label
-        const label = coordsToDmsFormatted(degrees, minutes - linePosition);
+        const label = coordsToDmsFormatted({ degrees, minutes: minutes - linePosition });
         this.drawGridLineLabel(label, labelX, yOffset, 'latitude');
       }
 
       for (let i = 0; i <= this.subdivisions; i++) {
-        const subdivYOffset = yOffset - (subdivHeight * i);
+        const subdivYOffset = yOffset + (subdivHeight * i);
         const fitsWithinBounds = subdivYOffset > this.bounds.top && subdivYOffset < this.bounds.bottom;
 
         if (fitsWithinBounds && subdivYOffset !== yOffset) {
@@ -179,7 +181,12 @@ export class CanvasGrid extends GeographicalArea {
             },
           });
 
-          const label = coordsToDmsFormatted(degrees, minutes - linePosition - 1, 60 / (this.subdivisions + 1) * i, 0);
+          const label = coordsToDmsFormatted({
+            degrees,
+            minutes: minutes - linePosition - 1,
+            seconds: 60 - (60 / (this.subdivisions + 1) * i),
+          }, 0);
+
           this.drawGridLineLabel(label, labelX, subdivYOffset, 'latitude', '25%');
         }
       }
@@ -214,7 +221,10 @@ export class CanvasGrid extends GeographicalArea {
         });
 
         // label
-        const label = coordsToDmsFormatted(degrees, minutes + linePosition + 1);
+        const label = coordsToDmsFormatted({
+          degrees,
+          minutes: minutes + linePosition + 1,
+        });
         this.drawGridLineLabel(label, xOffset, labelY, 'longitude');
       }
 
@@ -234,7 +244,12 @@ export class CanvasGrid extends GeographicalArea {
             },
           });
 
-          const label = coordsToDmsFormatted(degrees, minutes + linePosition + 1, 60 / (this.subdivisions + 1) * i, 0);
+          const label = coordsToDmsFormatted({
+            degrees,
+            minutes: minutes + linePosition + 1,
+            seconds: 60 / (this.subdivisions + 1) * i,
+          }, 0);
+
           this.drawGridLineLabel(label, subdivXOffset, labelY, 'longitude', '25%');
         }
       }
@@ -242,8 +257,9 @@ export class CanvasGrid extends GeographicalArea {
   }
 
   teardown = () => {
-    globalThis.window.removeEventListener('resize', this.handleResize);
-
     super.teardown();
+
+    globalThis.window.removeEventListener('resize', this.handleResize);
+    clientSocket.off(ServerEvents.RESET, this.reset);
   }
 }

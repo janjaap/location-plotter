@@ -10,18 +10,22 @@ interface Props {
 
 export const TrackCanvas = ({ center, zoomLevel }: Props) => {
   const trackCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasRef = useRef<CanvasTrack | null>(null);
 
   useEffect(() => {
     if (!trackCanvasRef.current || !center) return;
 
-    const canvas = new CanvasTrack(center, trackCanvasRef.current);
+    canvasRef.current = new CanvasTrack(center, trackCanvasRef.current);
+    canvasRef.current.init();
 
-    canvas.zoomLevel = zoomLevel;
+    return canvasRef.current.teardown;
+  }, [center]);
 
-    canvas.init();
+  useEffect(() => {
+    if (!canvasRef.current) return;
 
-    return canvas.teardown;
-  }, [center, zoomLevel]);
+    canvasRef.current.zoomLevel = zoomLevel;
+  }, [zoomLevel]);
 
   if (!center) return null;
 

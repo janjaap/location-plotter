@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ServerEvents, type Coordinate } from 'socket/types';
 import { useSocketEvent } from '../../hooks/useSocketEvent';
-import { ddToDmsFormatted } from '../../utils/ddToDms';
 import { MapCanvas } from '../MapCanvas/MapCanvas';
 import styles from './LiveTrack.module.css';
 
@@ -39,8 +38,8 @@ export const LiveTrack = () => {
 
       {center && (
         <div className={styles.mobMarker}>
-          {ddToDmsFormatted(center.lat)}<br />
-          {ddToDmsFormatted(center.long)}
+          {/* {ddToDmsFormatted(center.lat)}<br />
+          {ddToDmsFormatted(center.long)} */}
         </div>
       )}
 

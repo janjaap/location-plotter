@@ -3,19 +3,28 @@ import { ddToDms } from "../utils/ddToDms";
 import { clientSocket } from "./clientSocket";
 import { GeographicalArea } from "./geographicalArea";
 
+// const trackPoints: Coordinate[] = [];
+
 export class CanvasTrack extends GeographicalArea {
+  private trackPoints: Coordinate[] = [];
+  private strokeWidth = 2.5;
+
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     super(center, canvas);
+
+    clientSocket.on(ServerEvents.POSITION, this.drawLeg);
+    clientSocket.on(ServerEvents.RESET, this.reset);
+  }
+
+  set zoomLevel(value: number) {
+    super.zoomLevel = value;
+
+    this.clearCanvas();
+    this.trackPoints.forEach(this.drawLegLine);
   }
 
   reset = () => {
-    this.context.beginPath();
-    this.context.clearRect(-this.canvas.width / 2, -this.canvas.height / 2, this.canvas.width, this.canvas.height);
-  }
-
-  init = () => {
-    clientSocket.on(ServerEvents.POSITION, this.drawLeg);
-    clientSocket.on(ServerEvents.RESET, this.reset);
+    this.clearCanvas();
   }
 
   getGridCoordinate = (coordinate: Coordinate) => {
@@ -30,25 +39,36 @@ export class CanvasTrack extends GeographicalArea {
     const longSecondsDiff = (longSeconds + (longMinutes * 60)) - (centerLongSeconds + (centerLongMinutes * 60));
     const latSecondsDiff = (centerLatSeconds + (centerLatMinutes * 60)) - (latSeconds + (latMinutes * 60));
 
+    // TODO: account for crossing the 180th meridian and the poles
+    // TODO: account for degree crossing
+
     const x = Math.round(longSecondsDiff * pixelsPerSecond);
     const y = Math.round(latSecondsDiff * pixelsPerSecond);
 
     return { x, y };
   }
 
-  drawLeg = ({ position }: PositionPayload) => {
+  drawLegLine = (position: Coordinate) => {
     this.draw(() => {
       const { x, y } = this.getGridCoordinate(position);
 
-      this.context.strokeStyle = 'white';
+      this.context.strokeStyle = '#99c4dc';
+      this.context.lineWidth = this.strokeWidth / this.zoomLevel;
       this.context.lineTo(Math.round(x), Math.round(y));
       this.context.stroke();
     });
   }
 
-  teardown = () => {
-    clientSocket.off(ServerEvents.POSITION, this.drawLeg);
+  drawLeg = ({ position }: PositionPayload) => {
+    this.trackPoints.push(position);
 
+    this.drawLegLine(position);
+  }
+
+  teardown = () => {
     super.teardown();
+
+    clientSocket.off(ServerEvents.POSITION, this.drawLeg);
+    clientSocket.off(ServerEvents.RESET, this.reset);
   }
 }
