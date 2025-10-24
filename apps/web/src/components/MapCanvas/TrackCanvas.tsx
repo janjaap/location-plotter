@@ -1,14 +1,9 @@
 import { useEffect, useRef } from 'react';
-import type { Coordinate } from 'socket/types';
 import { CanvasTrack } from '../../lib/canvasTrack';
+import type { CanvasProps } from './MapCanvas';
 import styles from './MapCanvas.module.css';
 
-interface Props {
-  center: Coordinate | null;
-  zoomLevel: number;
-}
-
-export const TrackCanvas = ({ center, zoomLevel }: Props) => {
+export const TrackCanvas = ({ center, zoomLevel }: CanvasProps) => {
   const trackCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef = useRef<CanvasTrack | null>(null);
 
@@ -16,7 +11,6 @@ export const TrackCanvas = ({ center, zoomLevel }: Props) => {
     if (!trackCanvasRef.current || !center) return;
 
     canvasRef.current = new CanvasTrack(center, trackCanvasRef.current);
-    canvasRef.current.init();
 
     return canvasRef.current.teardown;
   }, [center]);

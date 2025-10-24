@@ -17,7 +17,7 @@ const sockets = new Set<Socket>();
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
 
 const POSITION_UPDATE_INTERVAL = 100; // ms
-const MAX_BEARING = 90; // degrees
+const MAX_BEARING = 120; // degrees
 
 let initialPosition: StartPositionPayload;
 let currentPosition: Coordinate;
@@ -26,7 +26,7 @@ let positionInterval: NodeJS.Timeout;
 let headingInterval: NodeJS.Timeout;
 
 function applyRandomBearing(heading: number) {
-  const bearing = Math.floor(Math.random() * ((MAX_BEARING * 2) + 1)) - MAX_BEARING;
+  const bearing = Math.floor(Math.random() * MAX_BEARING);
   let newHeading = heading + bearing;
 
   if (newHeading < 0) {
@@ -53,8 +53,6 @@ io.on(
     });
 
     socket.on(ClientEvents.START, (startPosition) => {
-      // initialPosition = startPosition;
-
       socket.emit(ServerEvents.MARKER, startPosition);
 
       const { lat, long, speed, heading } = startPosition;
@@ -65,13 +63,12 @@ io.on(
         currentHeading = applyRandomBearing(currentHeading);
 
         clearInterval(headingInterval);
-
         headingInterval = setInterval(generateNewHeading, Math.random() * 5_000);
       };
 
       generateNewHeading();
 
-      positionInterval = setInterval(() => {
+      const emitNewHeading = () => {
         const newPosition = updatePosition(
           currentPosition.lat,
           currentPosition.long,
@@ -84,7 +81,10 @@ io.on(
         socket.emit(ServerEvents.POSITION, { position: newPosition, distance, heading: currentHeading });
 
         currentPosition = newPosition;
-      }, POSITION_UPDATE_INTERVAL);
+      }
+
+      socket.emit(ServerEvents.POSITION, { position: startPosition, distance: 0, heading });
+      positionInterval = setInterval(emitNewHeading, POSITION_UPDATE_INTERVAL);
     });
 
     socket.on(ClientEvents.STOP, () => {

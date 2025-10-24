@@ -3,6 +3,7 @@ import type { FromTo } from "../types";
 import { coordsToDmsFormatted, ddToDms } from "../utils/ddToDms";
 import { clientSocket } from "./clientSocket";
 import { GeographicalArea } from "./geographicalArea";
+import { gridLabelColor, gridLineColor, subgridLabelColor } from "./tokens";
 
 export class CanvasGrid extends GeographicalArea {
   /**
@@ -17,12 +18,14 @@ export class CanvasGrid extends GeographicalArea {
   /**
    * Distance to the edge to determine the length of the grid lines
    */
-  private gridPadding = 20;
+  private gridPadding = 16;
   private labelFontSize = 12;
   private labelMaxWidth = 80;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     super(center, canvas);
+
+    this.init();
   }
 
   init = () => {
@@ -70,25 +73,12 @@ export class CanvasGrid extends GeographicalArea {
 
   redrawGrid = () => {
     this.clearCanvas();
-    this.drawCenterPoint();
     this.drawLongitudeLines();
     this.drawLatitudeLines();
   }
 
   handleResize = () => {
     this.redrawGrid();
-  }
-
-  drawCenterPoint = () => {
-    this.draw(() => {
-      this.context.fillStyle = '#ff0000';
-
-      this.context.moveTo(0, 0);
-      this.context.beginPath();
-      this.context.arc(0, 0, 3, 0, Math.PI * 2);
-      this.context.closePath();
-      this.context.fill();
-    });
   }
 
   /**
@@ -103,31 +93,37 @@ export class CanvasGrid extends GeographicalArea {
 
   drawGridLine = ({ from, to }: FromTo) => {
     this.drawInBackground(() => {
-      this.context.strokeStyle = 'rgb(66, 69, 72)';
+      this.context.lineWidth = 2;
+      this.context.strokeStyle = gridLineColor;
       this.drawLine({ from, to });
     });
   }
 
   drawSubdivisionLine = ({ from, to }: FromTo) => {
     this.drawInBackground(() => {
-      this.context.strokeStyle = 'rgb(66, 69, 72, 50%)';
+      this.context.lineWidth = 1;
+      this.context.strokeStyle = subgridLabelColor;
       this.context.setLineDash([4]);
-      this.context.lineDashOffset = 2;
       this.drawLine({ from, to });
     });
   };
 
-  drawGridLineLabel = (text: string, x: number, y: number, placement: 'longitude' | 'latitude', transparency = '50%') => {
+  drawSubgridLineLabel = (...args: Parameters<typeof this.drawLabel>) => {
+    this.context.fillStyle = subgridLabelColor;
+
+    this.drawLabel(...args);
+  }
+
+  drawGridLineLabel = (...args: Parameters<typeof this.drawLabel>) => {
+    this.context.fillStyle = gridLabelColor;
+
+    this.drawLabel(...args);
+  }
+
+  drawLabel = (text: string, x: number, y: number) => {
     this.drawInBackground(() => {
       this.context.font = `${this.labelFontSize}px system-ui`;
-
-      if (placement === 'longitude') {
-        this.context.textAlign = 'center';
-      } else {
-        this.context.textBaseline = 'middle';
-      }
-
-      this.context.fillStyle = `rgb(200, 202, 203, ${transparency})`;
+      this.context.textBaseline = 'middle';
       this.context.fillText(text, Math.round(x), Math.round(y), this.labelMaxWidth);
     });
   }
@@ -140,55 +136,61 @@ export class CanvasGrid extends GeographicalArea {
     const gridDiff = this.getGridDiff('latitude', seconds);
     const subdivHeight = this.gridRowHeight / (this.subdivisions + 1);
 
+    this.context.textAlign = 'start';
+
     this.rowIndices.forEach((linePosition) => {
       const yOffset = (linePosition * this.gridRowHeight) + gridDiff;
       // left-most position plus padding and label width
       const xFromPos = (-this.canvas.width / 2) + (this.gridPadding + this.labelMaxWidth);
       const xToPos = this.canvas.width / 2 - this.gridPadding;
       const labelX = (-this.canvas.width / 2) + this.gridPadding;
-      const fitsWithinBounds = yOffset > this.bounds.top && yOffset < this.bounds.bottom;
 
-      if (fitsWithinBounds) {
-        this.drawGridLine({
-          from: {
-            x: xFromPos,
-            y: yOffset,
-          },
-          to: {
-            x: xToPos,
-            y: yOffset,
-          },
-        });
+      {
+        const fitsWithinBounds = yOffset > this.bounds.top && yOffset < this.bounds.bottom;
 
-        // label
-        const label = coordsToDmsFormatted({ degrees, minutes: minutes - linePosition });
-        this.drawGridLineLabel(label, labelX, yOffset, 'latitude');
+        if (fitsWithinBounds) {
+          this.drawGridLine({
+            from: {
+              x: xFromPos,
+              y: yOffset,
+            },
+            to: {
+              x: xToPos,
+              y: yOffset,
+            },
+          });
+
+          // label
+          const label = coordsToDmsFormatted({ degrees, minutes: minutes - linePosition });
+          this.drawGridLineLabel(label, labelX, yOffset);
+        }
       }
 
       for (let i = 0; i <= this.subdivisions; i++) {
         const subdivYOffset = yOffset + (subdivHeight * i);
         const fitsWithinBounds = subdivYOffset > this.bounds.top && subdivYOffset < this.bounds.bottom;
 
-        if (fitsWithinBounds && subdivYOffset !== yOffset) {
-          this.drawSubdivisionLine({
-            from: {
-              x: xFromPos,
-              y: subdivYOffset,
-            },
-            to: {
-              x: xToPos,
-              y: subdivYOffset,
-            },
-          });
+        if (!fitsWithinBounds || subdivYOffset === yOffset) continue;
 
-          const label = coordsToDmsFormatted({
-            degrees,
-            minutes: minutes - linePosition - 1,
-            seconds: 60 - (60 / (this.subdivisions + 1) * i),
-          }, 0);
+        this.drawSubdivisionLine({
+          from: {
+            x: xFromPos,
+            y: subdivYOffset,
+          },
+          to: {
+            x: xToPos,
+            y: subdivYOffset,
+          },
+        });
 
-          this.drawGridLineLabel(label, labelX, subdivYOffset, 'latitude', '25%');
-        }
+        const label = coordsToDmsFormatted({
+          degrees,
+          minutes: minutes - linePosition - 1,
+          seconds: 60 - (60 / (this.subdivisions + 1) * i),
+        }, 0);
+
+        this.drawSubgridLineLabel(label, labelX, subdivYOffset);
+
       }
     });
   }
@@ -201,57 +203,65 @@ export class CanvasGrid extends GeographicalArea {
     const gridDiff = this.getGridDiff('longitude', seconds);
     const subdivWidth = this.gridColumnWidth / (this.subdivisions + 1);
 
+    this.context.textAlign = 'center';
+
     this.columnIndices.forEach((linePosition) => {
       const xOffset = (linePosition * this.gridColumnWidth) + this.gridColumnWidth - gridDiff;
       const fromYPos = (-this.canvas.height / 2) + this.gridPadding;
       const toYPos = this.canvas.height / 2 - this.gridLimit.bottom;
       const labelY = this.canvas.height / 2 - this.gridPadding;
-      const fitsWithinBounds = xOffset <= this.bounds.right && xOffset >= this.bounds.left;
 
-      if (fitsWithinBounds) {
-        this.drawGridLine({
-          from: {
-            x: xOffset,
-            y: fromYPos,
-          },
-          to: {
-            x: xOffset,
-            y: toYPos,
-          },
-        });
+      {
+        const fitsWithinBounds = xOffset <= this.bounds.right && xOffset >= this.bounds.left;
 
-        // label
-        const label = coordsToDmsFormatted({
-          degrees,
-          minutes: minutes + linePosition + 1,
-        });
-        this.drawGridLineLabel(label, xOffset, labelY, 'longitude');
+        if (fitsWithinBounds) {
+          this.drawGridLine({
+            from: {
+              x: xOffset,
+              y: fromYPos,
+            },
+            to: {
+              x: xOffset,
+              y: toYPos,
+            },
+          });
+
+          // label
+          const label = coordsToDmsFormatted({
+            degrees,
+            minutes: minutes + linePosition + 1,
+          });
+          this.drawGridLineLabel(label, xOffset, labelY);
+        }
       }
 
       for (let i = 0; i <= this.subdivisions; i++) {
         const subdivXOffset = xOffset + (subdivWidth * i);
         const fitsWithinBounds = subdivXOffset <= this.bounds.right && subdivXOffset >= this.bounds.left;
 
-        if (fitsWithinBounds && subdivXOffset !== xOffset) {
-          this.drawSubdivisionLine({
-            from: {
-              x: subdivXOffset,
-              y: fromYPos,
-            },
-            to: {
-              x: subdivXOffset,
-              y: toYPos,
-            },
-          });
+        // debugger;
 
-          const label = coordsToDmsFormatted({
-            degrees,
-            minutes: minutes + linePosition + 1,
-            seconds: 60 / (this.subdivisions + 1) * i,
-          }, 0);
+        if (!fitsWithinBounds || subdivXOffset === xOffset) continue;
 
-          this.drawGridLineLabel(label, subdivXOffset, labelY, 'longitude', '25%');
-        }
+
+        this.drawSubdivisionLine({
+          from: {
+            x: subdivXOffset,
+            y: fromYPos,
+          },
+          to: {
+            x: subdivXOffset,
+            y: toYPos,
+          },
+        });
+
+        const label = coordsToDmsFormatted({
+          degrees,
+          minutes: minutes + linePosition + 1,
+          seconds: 60 / (this.subdivisions + 1) * i,
+        }, 0);
+
+        this.drawSubgridLineLabel(label, subdivXOffset, labelY);
       }
     });
   }

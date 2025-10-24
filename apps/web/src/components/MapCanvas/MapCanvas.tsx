@@ -4,10 +4,16 @@ import { useSocketEvent } from "../../hooks/useSocketEvent";
 import { GridCanvas } from "./GridCanvas";
 import styles from './MapCanvas.module.css';
 import { TrackCanvas } from "./TrackCanvas";
+import { TrackIndicatorCanvas } from "./TrackIndicatorCanvas";
 
 const initialState = {
   zoomLevel: 1,
 };
+
+export type CanvasProps = {
+  center: Coordinate | null;
+  zoomLevel: number;
+}
 
 export const MapCanvas = () => {
   const [center, setCenter] = useState<Coordinate | null>(null);
@@ -15,6 +21,11 @@ export const MapCanvas = () => {
 
   useSocketEvent(ServerEvents.INIT, (initPosition) => {
     setCenter(initPosition);
+  });
+
+  useSocketEvent(ServerEvents.RESET, (initPosition) => {
+    setCenter(initPosition);
+    setFormState({ ...formState, zoomLevel: 1 });
   });
 
   const handleZoomLevelChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -27,6 +38,7 @@ export const MapCanvas = () => {
       <div className={styles.canvasContainer}>
         <GridCanvas center={center} zoomLevel={formState.zoomLevel} />
         <TrackCanvas center={center} zoomLevel={formState.zoomLevel} />
+        <TrackIndicatorCanvas center={center} zoomLevel={formState.zoomLevel} />
       </div>
 
       <div className={styles.gridCanvasForm}>
@@ -43,7 +55,7 @@ export const MapCanvas = () => {
               </button>
             </div>
 
-            <input type="range" min="1" max="20" step="0.1" value={formState.zoomLevel} onChange={handleZoomLevelChange} />
+            <input type="range" min="0.5" max="20" step="0.1" value={formState.zoomLevel} onChange={handleZoomLevelChange} />
           </div>
         </form>
       </div>

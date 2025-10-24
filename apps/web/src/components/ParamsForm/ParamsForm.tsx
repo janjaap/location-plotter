@@ -83,7 +83,7 @@ export const ParamsForm = () => {
 
     updateStateValue(name, Number(value));
 
-    // clientSocket.emit(ClientEvents.INIT, { ...formState, [name]: Number(value) });
+    clientSocket.emit(ClientEvents.INIT, { ...formState, [name]: Number(value) });
   }
 
   function stopTracking(event: MouseEvent<HTMLButtonElement>) {
@@ -103,15 +103,18 @@ export const ParamsForm = () => {
   return (
     <div className={styles.paramsForm}>
       <form action={submitAction}>
-        <label>Latitude
+        <label>
+          Latitude
           <input type="number" name="lat" value={formState.lat} step="0.000001" onChange={handleChange} />
         </label>
 
-        <label>Longitude
+        <label>
+          Longitude
           <input type="number" name="long" value={formState.long} step="0.0000001" onChange={handleChange} />
         </label>
 
-        <label>Speed (kts)
+        <label>
+          Speed (kts)
           <input type="number" name="speed" value={formState.speed} step="0.1" onChange={handleChange} />
         </label>
 

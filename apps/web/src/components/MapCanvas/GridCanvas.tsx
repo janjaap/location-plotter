@@ -1,14 +1,9 @@
 import { useEffect, useRef } from 'react';
-import type { Coordinate } from 'socket/types';
 import { CanvasGrid } from '../../lib/canvasGrid';
+import type { CanvasProps } from './MapCanvas';
 import styles from './MapCanvas.module.css';
 
-interface Props {
-  center: Coordinate | null;
-  zoomLevel: number;
-}
-
-export const GridCanvas = ({ center, zoomLevel }: Props) => {
+export const GridCanvas = ({ center, zoomLevel }: CanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gridCanvasRef = useRef<CanvasGrid | null>(null);
 
@@ -16,7 +11,6 @@ export const GridCanvas = ({ center, zoomLevel }: Props) => {
     if (!canvasRef.current || !center) return;
 
     gridCanvasRef.current = new CanvasGrid(center, canvasRef.current);
-    gridCanvasRef.current.init();
 
     return gridCanvasRef.current.teardown;
   }, [center]);

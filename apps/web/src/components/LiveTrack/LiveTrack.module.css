@@ -21,14 +21,75 @@
   z-index: 1;
 }
 
+.compass {
+  background-color: #16191d;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  display: block;
+  height: calc(2 * var(--needle-height));
+  position: absolute;
+  right: 1rem;
+  top: var(--needle-height);
+  width: calc(2 * var(--needle-height));
+  z-index: 3;
+}
+
+/*
+.eastWestRing,
+.eastWestRing::before,
+.eastWestRing::after {
+  position: absolute;
+  height: calc(2 * var(--needle-height));
+  inset: 0;
+  width: calc(2 * var(--needle-height));
+} */
+
+/*
+.eastWestRing::before {
+  content: "E";
+  font-size: 0.8rem;
+  height: calc(4 * var(--needle-height));
+  text-align: center;
+  top: calc(-1 * var(--needle-height));
+  transform-origin: center;
+  transform: rotate(90deg);
+} */
+/*
+
+.eastWestRing::after {
+  content: "W";
+  font-size: 0.8rem;
+  height: calc(4 * var(--needle-height));
+  text-align: center;
+
+} */
+
+.compass::before {
+  content: "N";
+  position: absolute;
+  top: calc(-1 * var(--needle-height));
+  width: calc(2 * var(--needle-height));
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+/*
+.compass::after {
+  content: "S";
+  position: absolute;
+  bottom: calc(-1 * var(--needle-height));
+  width: calc(2 * var(--needle-height));
+  text-align: center;
+  font-size: 0.8rem;
+} */
+
 .needle {
   position: absolute;
-  width: var(--needle-width);
-  height: calc(2 * var(--needle-height));
-  transform: translate(10cqw, 90cqh) rotateZ(0deg);
   transform-origin: center;
   transition: transform 0.2s ease-in-out;
-  z-index: 1;
+  left: calc(var(--needle-height) - var(--needle-width) / 2);
+  width: var(--needle-width);
+  height: calc(2 * var(--needle-height));
 }
 
 .needle::before {

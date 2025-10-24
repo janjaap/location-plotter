@@ -1,5 +1,6 @@
 import { type Coordinate } from "socket/types";
 import type { FromTo } from "../types";
+import { ddToDms } from "../utils/ddToDms";
 
 export abstract class GeographicalArea {
   /**
@@ -21,6 +22,7 @@ export abstract class GeographicalArea {
 
   private _zoomLevel = 1;
   private _subdivisions = 1;
+  private _animationId: number | null = null;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     this._center = center;
@@ -58,6 +60,9 @@ export abstract class GeographicalArea {
     drawFunc();
 
     this.context.restore();
+
+    cancelAnimationFrame(this._animationId ?? 0);
+    this._animationId = requestAnimationFrame(drawFunc);
   }
 
   get visibleLongitudeDegrees() {
@@ -93,6 +98,10 @@ export abstract class GeographicalArea {
   }
 
   get subdivisions() {
+    if (this._subdivisions < 1) {
+      return 1;
+    }
+
     return this._subdivisions;
   }
 
@@ -109,6 +118,27 @@ export abstract class GeographicalArea {
     this.context.stroke();
   }
 
+  getGridCoordinate = (coordinate: Coordinate) => {
+    const pixelsPerSecond = this.gridColumnWidth / 60;
+
+    const { seconds: latSeconds, minutes: latMinutes } = ddToDms(coordinate.lat);
+    const { seconds: longSeconds, minutes: longMinutes } = ddToDms(coordinate.long);
+
+    const { seconds: centerLatSeconds, minutes: centerLatMinutes } = ddToDms(this.center.lat);
+    const { seconds: centerLongSeconds, minutes: centerLongMinutes } = ddToDms(this.center.long);
+
+    const longSecondsDiff = (longSeconds + (longMinutes * 60)) - (centerLongSeconds + (centerLongMinutes * 60));
+    const latSecondsDiff = (centerLatSeconds + (centerLatMinutes * 60)) - (latSeconds + (latMinutes * 60));
+
+    // TODO: account for crossing the 180th meridian and the poles
+    // TODO: account for degree crossing
+
+    const x = Math.round(longSecondsDiff * pixelsPerSecond);
+    const y = Math.round(latSecondsDiff * pixelsPerSecond);
+
+    return { x, y };
+  }
+
   handleResize = () => {
     this.centerContextToCoordinate();
   }
@@ -121,6 +151,7 @@ export abstract class GeographicalArea {
   }
 
   teardown() {
-    globalThis.window.removeEventListener('resize', this.handleResize);
+    globalThis.window.removeEventListener('resize', this?.handleResize);
+    cancelAnimationFrame(this?._animationId ?? 0);
   }
 }
