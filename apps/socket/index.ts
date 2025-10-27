@@ -26,7 +26,7 @@ let positionInterval: NodeJS.Timeout;
 let headingInterval: NodeJS.Timeout;
 
 function applyRandomBearing(heading: number) {
-  const bearing = Math.floor(Math.random() * MAX_BEARING);
+  const bearing = Math.floor(Math.random() * ((MAX_BEARING * 2) + 1)) - MAX_BEARING;;
   let newHeading = heading + bearing;
 
   if (newHeading < 0) {
