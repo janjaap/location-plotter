@@ -31,7 +31,8 @@ export class CanvasGrid extends GeographicalArea {
   init = () => {
     this.reset();
 
-    globalThis.window.addEventListener('resize', this.handleResize);
+    this.observeCanvasResize(this.handleResize);
+
     clientSocket.on(ServerEvents.RESET, this.reset);
   }
 
@@ -269,7 +270,6 @@ export class CanvasGrid extends GeographicalArea {
   teardown = () => {
     super.teardown();
 
-    globalThis.window.removeEventListener('resize', this.handleResize);
     clientSocket.off(ServerEvents.RESET, this.reset);
   }
 }

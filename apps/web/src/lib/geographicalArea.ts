@@ -23,6 +23,7 @@ export abstract class GeographicalArea {
   private _zoomLevel = 1;
   private _subdivisions = 1;
   private _animationId: number | null = null;
+  protected observer: ResizeObserver | null = null;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     this._center = center;
@@ -40,9 +41,14 @@ export abstract class GeographicalArea {
   }
 
   init = () => {
-    this.centerContextToCoordinate();
+    this.observeCanvasResize(this.handleResize);
 
-    globalThis.window.addEventListener('resize', this.handleResize);
+    this.centerContextToCoordinate();
+  }
+
+  protected observeCanvasResize = (callback: ResizeObserverCallback) => {
+    this.observer = new ResizeObserver(callback);
+    this.observer.observe(this.canvas);
   }
 
   protected drawInBackground = (drawFunc: () => void) => {
@@ -151,7 +157,9 @@ export abstract class GeographicalArea {
   }
 
   teardown() {
-    globalThis.window.removeEventListener('resize', this?.handleResize);
+    this.observer?.disconnect();
+    this.observer = null;
+
     cancelAnimationFrame(this?._animationId ?? 0);
   }
 }

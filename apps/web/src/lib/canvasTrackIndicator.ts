@@ -16,21 +16,27 @@ export class CanvasTrackIndicator extends GeographicalArea {
     return this._strokeWidth / this.zoomLevel;
   }
 
+  set zoomLevel(value: number) {
+    super.zoomLevel = value;
+
+    this.clearCanvas();
+    this.centerContextToCoordinate();
+  }
+
   init = () => {
     clientSocket.on(ServerEvents.POSITION, this.moveIndicator);
     clientSocket.on(ServerEvents.RESET, this.reset);
 
-    this.drawCenterDot();
+    this.reset();
   }
 
   reset = () => {
     this.clearCanvas();
     this.centerContextToCoordinate();
-    this.drawCenterDot();
+    this.drawMobMarker();
   }
 
-  drawCenterDot = () => {
-    console.log('drawing center dot');
+  drawMobMarker = () => {
     this.drawDot({ x: 0, y: 0, radius: 3, fillStyle: mobMarkerColor });
   }
 
@@ -38,17 +44,16 @@ export class CanvasTrackIndicator extends GeographicalArea {
     this.reset();
 
     const { x, y } = this.getGridCoordinate(position);
-    this.drawDot({ x, y, radius: 2, fillStyle: trackIndicatorColor });
+    this.drawDot({ x, y, radius: 3, fillStyle: trackIndicatorColor });
   }
 
   drawDot = ({ x, y, radius, fillStyle }: { x: number; y: number; radius: number; fillStyle: string }) => {
     this.draw(() => {
-      console.log('drawing dot at', x, y);
       this.context.fillStyle = fillStyle;
 
-      this.context.moveTo(x, y);
+      this.context.translate(x, y);
       this.context.beginPath();
-      this.context.arc(x, y, radius, 0, Math.PI * 2);
+      this.context.arc(0, 0, radius, 0, Math.PI * 2);
       this.context.closePath();
       this.context.fill();
     });
