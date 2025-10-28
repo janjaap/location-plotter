@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-import { ServerEvents, type ServerToClientEvents } from "socket/types";
-import { clientSocket } from "../lib/clientSocket";
+import { useEffect } from 'react';
+import { ServerEvents, type ServerToClientEvents } from 'socket/types';
+import { clientSocket } from '../lib/clientSocket';
 
 export const useSocketEvent = <T extends ServerEvents>(
   event: T,
@@ -14,4 +14,4 @@ export const useSocketEvent = <T extends ServerEvents>(
       clientSocket.off(event, handler);
     };
   }, [event, handler, once]);
-}
+};

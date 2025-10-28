@@ -1,7 +1,11 @@
-import { ServerEvents, type Coordinate, type PositionPayload } from "socket/types";
-import { clientSocket } from "./clientSocket";
-import { GeographicalArea } from "./geographicalArea";
-import { mobMarkerColor, trackIndicatorColor } from "./tokens";
+import {
+  ServerEvents,
+  type Coordinate,
+  type PositionPayload,
+} from 'socket/types';
+import { clientSocket } from './clientSocket';
+import { GeographicalArea } from './geographicalArea';
+import { mobMarkerColor, trackIndicatorColor } from './tokens';
 
 export class CanvasTrackIndicator extends GeographicalArea {
   private _strokeWidth = 4;
@@ -28,26 +32,36 @@ export class CanvasTrackIndicator extends GeographicalArea {
     clientSocket.on(ServerEvents.RESET, this.reset);
 
     this.reset();
-  }
+  };
 
   reset = () => {
     this.clearCanvas();
     this.centerContextToCoordinate();
     this.drawMobMarker();
-  }
+  };
 
   drawMobMarker = () => {
     this.drawDot({ x: 0, y: 0, radius: 3, fillStyle: mobMarkerColor });
-  }
+  };
 
   moveIndicator = ({ position }: PositionPayload) => {
     this.reset();
 
     const { x, y } = this.getGridCoordinate(position);
     this.drawDot({ x, y, radius: 3, fillStyle: trackIndicatorColor });
-  }
+  };
 
-  drawDot = ({ x, y, radius, fillStyle }: { x: number; y: number; radius: number; fillStyle: string }) => {
+  drawDot = ({
+    x,
+    y,
+    radius,
+    fillStyle,
+  }: {
+    x: number;
+    y: number;
+    radius: number;
+    fillStyle: string;
+  }) => {
     this.draw(() => {
       this.context.fillStyle = fillStyle;
 
@@ -57,12 +71,12 @@ export class CanvasTrackIndicator extends GeographicalArea {
       this.context.closePath();
       this.context.fill();
     });
-  }
+  };
 
   teardown = () => {
     super.teardown();
 
     clientSocket.off(ServerEvents.POSITION, this.moveIndicator);
     clientSocket.off(ServerEvents.RESET, this.reset);
-  }
+  };
 }

@@ -1,10 +1,10 @@
-import { useState, type ChangeEvent } from "react";
-import { ServerEvents, type Coordinate } from "socket/types";
-import { useSocketEvent } from "../../hooks/useSocketEvent";
-import { GridCanvas } from "./GridCanvas";
+import { useState, type ChangeEvent } from 'react';
+import { ServerEvents, type Coordinate } from 'socket/types';
+import { useSocketEvent } from '../../hooks/useSocketEvent';
+import { GridCanvas } from './GridCanvas';
 import styles from './MapCanvas.module.css';
-import { TrackCanvas } from "./TrackCanvas";
-import { TrackIndicatorCanvas } from "./TrackIndicatorCanvas";
+import { TrackCanvas } from './TrackCanvas';
+import { TrackIndicatorCanvas } from './TrackIndicatorCanvas';
 
 const initialState = {
   zoomLevel: 1,
@@ -13,7 +13,7 @@ const initialState = {
 export type CanvasProps = {
   center: Coordinate | null;
   zoomLevel: number;
-}
+};
 
 export const MapCanvas = () => {
   const [center, setCenter] = useState<Coordinate | null>(null);
@@ -50,15 +50,28 @@ export const MapCanvas = () => {
                 disabled={formState.zoomLevel === initialState.zoomLevel}
                 className="small"
                 type="button"
-                onClick={() => setFormState({ ...formState, zoomLevel: initialState.zoomLevel })}>
+                onClick={() =>
+                  setFormState({
+                    ...formState,
+                    zoomLevel: initialState.zoomLevel,
+                  })
+                }
+              >
                 Reset
               </button>
             </div>
 
-            <input type="range" min="0.5" max="20" step="0.1" value={formState.zoomLevel} onChange={handleZoomLevelChange} />
+            <input
+              type="range"
+              min="0.5"
+              max="20"
+              step="0.1"
+              value={formState.zoomLevel}
+              onChange={handleZoomLevelChange}
+            />
           </div>
         </form>
       </div>
     </div>
   );
-}
+};

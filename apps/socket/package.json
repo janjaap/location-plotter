@@ -4,13 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "pnpm dlx tsx index.ts"
+    "dev": "pnpm dlx tsx index.ts",
+    "test": "vitest --config ../../vite.config.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.11.0",
   "devDependencies": {
-    "socket.io": "^4.8.1"
+    "add": "^2.0.6",
+    "socket.io": "^4.8.1",
+    "vitest": "^4.0.3"
   }
 }

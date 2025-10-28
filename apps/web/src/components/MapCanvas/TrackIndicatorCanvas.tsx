@@ -10,7 +10,10 @@ export const TrackIndicatorCanvas = ({ center, zoomLevel }: CanvasProps) => {
   useEffect(() => {
     if (!trackIndicatorCanvasRef.current || !center) return;
 
-    canvasRef.current = new CanvasTrackIndicator(center, trackIndicatorCanvasRef.current);
+    canvasRef.current = new CanvasTrackIndicator(
+      center,
+      trackIndicatorCanvasRef.current,
+    );
 
     return canvasRef.current.teardown;
   }, [center]);
@@ -23,5 +26,10 @@ export const TrackIndicatorCanvas = ({ center, zoomLevel }: CanvasProps) => {
 
   if (!center) return null;
 
-  return <canvas className={styles.trackCanvasIndicator} ref={trackIndicatorCanvasRef}></canvas>;
-}
+  return (
+    <canvas
+      className={styles.trackCanvasIndicator}
+      ref={trackIndicatorCanvasRef}
+    ></canvas>
+  );
+};

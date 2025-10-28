@@ -7,7 +7,7 @@ import {
   Coordinate,
   ServerEvents,
   ServerToClientEvents,
-  StartPositionPayload
+  StartPositionPayload,
 } from './types';
 import { updatePosition } from './updatePosition';
 
@@ -26,7 +26,8 @@ let positionInterval: NodeJS.Timeout;
 let headingInterval: NodeJS.Timeout;
 
 function applyRandomBearing(heading: number) {
-  const bearing = Math.floor(Math.random() * ((MAX_BEARING * 2) + 1)) - MAX_BEARING;;
+  const bearing =
+    Math.floor(Math.random() * (MAX_BEARING * 2 + 1)) - MAX_BEARING;
   let newHeading = heading + bearing;
 
   if (newHeading < 0) {
@@ -63,7 +64,10 @@ io.on(
         currentHeading = applyRandomBearing(currentHeading);
 
         clearInterval(headingInterval);
-        headingInterval = setInterval(generateNewHeading, Math.random() * 5_000);
+        headingInterval = setInterval(
+          generateNewHeading,
+          Math.random() * 5_000,
+        );
       };
 
       generateNewHeading();
@@ -78,12 +82,20 @@ io.on(
         );
         const distance = getDistance({ lat, long }, newPosition);
 
-        socket.emit(ServerEvents.POSITION, { position: newPosition, distance, heading: currentHeading });
+        socket.emit(ServerEvents.POSITION, {
+          position: newPosition,
+          distance,
+          heading: currentHeading,
+        });
 
         currentPosition = newPosition;
-      }
+      };
 
-      socket.emit(ServerEvents.POSITION, { position: startPosition, distance: 0, heading });
+      socket.emit(ServerEvents.POSITION, {
+        position: startPosition,
+        distance: 0,
+        heading,
+      });
       positionInterval = setInterval(emitNewHeading, POSITION_UPDATE_INTERVAL);
     });
 
@@ -109,7 +121,7 @@ io.on(
     socket.on(ClientEvents.DISCONNECT, (reason: string) => {
       console.log(`socket ${socket.id} disconnected due to ${reason}`);
     });
-  }
+  },
 );
 
 httpServer

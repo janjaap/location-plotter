@@ -24,4 +24,4 @@ export const TrackCanvas = ({ center, zoomLevel }: CanvasProps) => {
   if (!center) return null;
 
   return <canvas className={styles.trackCanvas} ref={trackCanvasRef}></canvas>;
-}
+};

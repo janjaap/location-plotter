@@ -1,7 +1,17 @@
-import { useActionState, useEffect, useState, type ChangeEvent, type MouseEvent } from "react";
-import { ClientEvents, ServerEvents, type StartPositionPayload } from "socket/types";
-import { useSocketEvent } from "../../hooks/useSocketEvent";
-import { clientSocket } from "../../lib/clientSocket";
+import {
+  useActionState,
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type MouseEvent,
+} from 'react';
+import {
+  ClientEvents,
+  ServerEvents,
+  type StartPositionPayload,
+} from 'socket/types';
+import { useSocketEvent } from '../../hooks/useSocketEvent';
+import { clientSocket } from '../../lib/clientSocket';
 import styles from './ParamsForm.module.css';
 
 const startPosition: StartPositionPayload = {
@@ -20,7 +30,7 @@ const startPosition: StartPositionPayload = {
 const initialPositionState = {
   ...startPosition,
   distance: 0,
-}
+};
 
 export const ParamsForm = () => {
   const [isTracking, setIsTracking] = useState(false);
@@ -64,7 +74,6 @@ export const ParamsForm = () => {
 
       return newState;
     });
-
   }
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
@@ -83,7 +92,10 @@ export const ParamsForm = () => {
 
     updateStateValue(name, Number(value));
 
-    clientSocket.emit(ClientEvents.INIT, { ...formState, [name]: Number(value) });
+    clientSocket.emit(ClientEvents.INIT, {
+      ...formState,
+      [name]: Number(value),
+    });
   }
 
   function stopTracking(event: MouseEvent<HTMLButtonElement>) {
@@ -105,37 +117,60 @@ export const ParamsForm = () => {
       <form action={submitAction}>
         <label>
           Latitude
-          <input type="number" name="lat" value={formState.lat} step="0.000001" onChange={handleChange} />
+          <input
+            type="number"
+            name="lat"
+            value={formState.lat}
+            step="0.000001"
+            onChange={handleChange}
+          />
         </label>
 
         <label>
           Longitude
-          <input type="number" name="long" value={formState.long} step="0.0000001" onChange={handleChange} />
+          <input
+            type="number"
+            name="long"
+            value={formState.long}
+            step="0.0000001"
+            onChange={handleChange}
+          />
         </label>
 
         <label>
           Speed (kts)
-          <input type="number" name="speed" value={formState.speed} step="0.1" onChange={handleChange} />
+          <input
+            type="number"
+            name="speed"
+            value={formState.speed}
+            step="0.1"
+            onChange={handleChange}
+          />
         </label>
 
-        <label>Heading (degrees)
-          <input type="number" name="heading" value={formState.heading} step="1" onChange={handleChange} />
+        <label>
+          Heading (degrees)
+          <input
+            type="number"
+            name="heading"
+            value={formState.heading}
+            step="1"
+            onChange={handleChange}
+          />
         </label>
 
-        <button type="submit" disabled={isTracking}>Start</button>
+        <button type="submit" disabled={isTracking}>
+          Start
+        </button>
 
         <button disabled={!isTracking} onClick={stopTracking}>
           Stop
         </button>
 
-        <button onClick={resetTracking}>
-          Reset
-        </button>
+        <button onClick={resetTracking}>Reset</button>
       </form>
 
-      <div>
-        Distance: {formState.distance.toFixed(0)} meters
-      </div>
+      <div>Distance: {formState.distance.toFixed(0)} meters</div>
     </div>
   );
-}
+};

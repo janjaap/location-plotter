@@ -23,4 +23,4 @@ export const GridCanvas = ({ center, zoomLevel }: CanvasProps) => {
   }, [zoomLevel]);
 
   return <canvas className={styles.gridCanvas} ref={canvasRef}></canvas>;
-}
+};

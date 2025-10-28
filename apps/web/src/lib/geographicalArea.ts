@@ -1,6 +1,6 @@
-import { type Coordinate } from "socket/types";
-import type { FromTo } from "../types";
-import { ddToDms } from "../utils/ddToDms";
+import { type Coordinate } from 'socket/types';
+import type { FromTo } from '../types';
+import { ddToDms } from '../utils/ddToDms';
 
 export abstract class GeographicalArea {
   /**
@@ -44,21 +44,21 @@ export abstract class GeographicalArea {
     this.observeCanvasResize(this.handleResize);
 
     this.centerContextToCoordinate();
-  }
+  };
 
   protected observeCanvasResize = (callback: ResizeObserverCallback) => {
     this.observer = new ResizeObserver(callback);
     this.observer.observe(this.canvas);
-  }
+  };
 
   protected drawInBackground = (drawFunc: () => void) => {
     this.context.save();
     this.context.globalCompositeOperation = 'destination-over';
 
-    this.draw(drawFunc)
+    this.draw(drawFunc);
 
     this.context.restore();
-  }
+  };
 
   protected draw = (drawFunc: () => void) => {
     this.context.save();
@@ -69,7 +69,7 @@ export abstract class GeographicalArea {
 
     cancelAnimationFrame(this._animationId ?? 0);
     this._animationId = requestAnimationFrame(drawFunc);
-  }
+  };
 
   get visibleLongitudeDegrees() {
     return this._visibleLongitudeDegrees;
@@ -113,8 +113,13 @@ export abstract class GeographicalArea {
 
   clearCanvas = () => {
     this.context.beginPath();
-    this.context.clearRect(-this.canvas.width / 2, -this.canvas.height / 2, this.canvas.width, this.canvas.height);
-  }
+    this.context.clearRect(
+      -this.canvas.width / 2,
+      -this.canvas.height / 2,
+      this.canvas.width,
+      this.canvas.height,
+    );
+  };
 
   drawLine = ({ from, to }: FromTo) => {
     this.context.beginPath();
@@ -122,19 +127,31 @@ export abstract class GeographicalArea {
     this.context.lineTo(Math.round(to.x), Math.round(to.y));
     this.context.closePath();
     this.context.stroke();
-  }
+  };
 
   getGridCoordinate = (coordinate: Coordinate) => {
     const pixelsPerSecond = this.gridColumnWidth / 60;
 
-    const { seconds: latSeconds, minutes: latMinutes } = ddToDms(coordinate.lat);
-    const { seconds: longSeconds, minutes: longMinutes } = ddToDms(coordinate.long);
+    const { seconds: latSeconds, minutes: latMinutes } = ddToDms(
+      coordinate.lat,
+    );
+    const { seconds: longSeconds, minutes: longMinutes } = ddToDms(
+      coordinate.long,
+    );
 
-    const { seconds: centerLatSeconds, minutes: centerLatMinutes } = ddToDms(this.center.lat);
-    const { seconds: centerLongSeconds, minutes: centerLongMinutes } = ddToDms(this.center.long);
+    const { seconds: centerLatSeconds, minutes: centerLatMinutes } = ddToDms(
+      this.center.lat,
+    );
+    const { seconds: centerLongSeconds, minutes: centerLongMinutes } = ddToDms(
+      this.center.long,
+    );
 
-    const longSecondsDiff = (longSeconds + (longMinutes * 60)) - (centerLongSeconds + (centerLongMinutes * 60));
-    const latSecondsDiff = (centerLatSeconds + (centerLatMinutes * 60)) - (latSeconds + (latMinutes * 60));
+    const longSecondsDiff =
+      longSeconds +
+      longMinutes * 60 -
+      (centerLongSeconds + centerLongMinutes * 60);
+    const latSecondsDiff =
+      centerLatSeconds + centerLatMinutes * 60 - (latSeconds + latMinutes * 60);
 
     // TODO: account for crossing the 180th meridian and the poles
     // TODO: account for degree crossing
@@ -143,18 +160,18 @@ export abstract class GeographicalArea {
     const y = Math.round(latSecondsDiff * pixelsPerSecond);
 
     return { x, y };
-  }
+  };
 
   handleResize = () => {
     this.centerContextToCoordinate();
-  }
+  };
 
   centerContextToCoordinate = () => {
     this.canvas.width = this.canvas.clientWidth;
     this.canvas.height = this.canvas.clientHeight;
 
     this.context.translate(this.canvas.width / 2, this.canvas.height / 2);
-  }
+  };
 
   teardown() {
     this.observer?.disconnect();

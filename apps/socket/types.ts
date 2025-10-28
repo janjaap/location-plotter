@@ -19,18 +19,31 @@ export enum ClientEvents {
 }
 
 export type Coordinate = { lat: number; long: number };
-export type StartPositionPayload = { lat: number; long: number; speed: number; heading: number };
-export type PositionPayload = { position: Coordinate, distance: number; heading: number };
+export type StartPositionPayload = {
+  lat: number;
+  long: number;
+  speed: number;
+  heading: number;
+};
+export type PositionPayload = {
+  position: Coordinate;
+  distance: number;
+  heading: number;
+};
 
 export interface ServerToClientEvents {
   [ServerEvents.CONNECTED]: () => void;
   [ServerEvents.DISCONNECTED]: () => void;
   [ServerEvents.MARKER]: (marker: Coordinate) => void;
-  [ServerEvents.INIT]: (position: Coordinate, distance: number, heading: number) => void;
+  [ServerEvents.INIT]: (
+    position: Coordinate,
+    distance: number,
+    heading: number,
+  ) => void;
   [ServerEvents.POSITION]: (payload: PositionPayload) => void;
   [ServerEvents.RESET]: (payload: StartPositionPayload) => void;
   [ServerEvents.STOPPED]: () => void;
-};
+}
 
 export interface ClientToServerEvents {
   [ClientEvents.CLOSE]: () => void;

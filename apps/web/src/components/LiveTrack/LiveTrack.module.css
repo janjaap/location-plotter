@@ -65,7 +65,7 @@
 } */
 
 .compass::before {
-  content: "N";
+  content: 'N';
   position: absolute;
   top: calc(-1 * var(--needle-height));
   width: calc(2 * var(--needle-height));
@@ -93,15 +93,15 @@
 }
 
 .needle::before {
-  content: "";
+  content: '';
   position: absolute;
   border-left: var(--needle-width) solid transparent;
   border-right: var(--needle-width) solid transparent;
-  border-bottom: var(--needle-height) solid #EF5052;
+  border-bottom: var(--needle-height) solid #ef5052;
 }
 
 .needle::after {
-  content: "";
+  content: '';
   position: absolute;
   top: var(--needle-height);
   border-left: var(--needle-width) solid transparent;

@@ -40,7 +40,10 @@ export const LiveTrack = () => {
       {needleRotation && (
         <span className={styles.compass}>
           <span className={styles.eastWestRing} />
-          <span className={styles.needle} style={{ transform: `rotateZ(${needleRotation}deg)` }} />
+          <span
+            className={styles.needle}
+            style={{ transform: `rotateZ(${needleRotation}deg)` }}
+          />
         </span>
       )}
 
@@ -48,5 +51,5 @@ export const LiveTrack = () => {
 
       <MapCanvas />
     </div>
-  )
-}
+  );
+};

@@ -1,17 +1,16 @@
-import type { DMS } from "../types";
+import type { DMS } from '../types';
 
 export function ddToDms(decimalDegrees: number) {
   const absolute = Math.abs(decimalDegrees);
   const degrees = Math.floor(absolute);
   const minutesNotTruncated = (absolute - degrees) * 60;
   const minutes = Math.floor(minutesNotTruncated);
-  const seconds = ((minutesNotTruncated - minutes) * 60);
+  const seconds = (minutesNotTruncated - minutes) * 60;
 
   return { degrees, minutes, seconds };
 }
 
-const zeroPad = (num: number, places = 3) =>
-  String(num).padStart(places, '0');
+const zeroPad = (num: number, places = 3) => String(num).padStart(places, '0');
 
 export function ddToDmsFormatted(decimalDegrees: number) {
   const { degrees, minutes, seconds } = ddToDms(decimalDegrees);
