@@ -16,6 +16,7 @@ export enum ClientEvents {
   RESET = 'reset',
   START = 'start',
   STOP = 'stop',
+  ZOOM = 'zoom',
 }
 
 export type Coordinate = { lat: number; long: number };
@@ -35,11 +36,7 @@ export interface ServerToClientEvents {
   [ServerEvents.CONNECTED]: () => void;
   [ServerEvents.DISCONNECTED]: () => void;
   [ServerEvents.MARKER]: (marker: Coordinate) => void;
-  [ServerEvents.INIT]: (
-    position: Coordinate,
-    distance: number,
-    heading: number,
-  ) => void;
+  [ServerEvents.INIT]: (payload: PositionPayload) => void;
   [ServerEvents.POSITION]: (payload: PositionPayload) => void;
   [ServerEvents.RESET]: (payload: StartPositionPayload) => void;
   [ServerEvents.STOPPED]: () => void;
@@ -53,4 +50,7 @@ export interface ClientToServerEvents {
   [ClientEvents.RESET]: () => void;
   [ClientEvents.START]: (payload: StartPositionPayload) => void;
   [ClientEvents.STOP]: () => void;
+  [ClientEvents.ZOOM]: (zoomLevel: number) => void;
 }
+
+export type DMS = { degrees: number; minutes: number; seconds: number };

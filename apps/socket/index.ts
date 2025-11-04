@@ -14,16 +14,14 @@ import { updatePosition } from './updatePosition';
 const httpServer = createServer();
 const port = 5000;
 const sockets = new Set<Socket>();
-const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
+const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
+  cors: {
+    origin: 'http://localhost:3000',
+  },
+});
 
 const POSITION_UPDATE_INTERVAL = 100; // ms
 const MAX_BEARING = 120; // degrees
-
-let initialPosition: StartPositionPayload;
-let currentPosition: Coordinate;
-let currentHeading: number;
-let positionInterval: NodeJS.Timeout;
-let headingInterval: NodeJS.Timeout;
 
 function applyRandomBearing(heading: number) {
   const bearing =
@@ -42,85 +40,100 @@ function applyRandomBearing(heading: number) {
 io.on(
   'connection',
   (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {
+    let initialPosition: StartPositionPayload;
+    let currentPosition: Coordinate;
+    let currentHeading: number;
+    let positionInterval: NodeJS.Timeout;
+    let headingInterval: NodeJS.Timeout;
+
     sockets.add(socket);
 
     socket.emit(ServerEvents.CONNECTED);
 
-    socket.on(ClientEvents.INIT, (startPosition) => {
-      const { lat, long, heading } = startPosition;
-      initialPosition = startPosition;
+    socket
+      .on(ClientEvents.INIT, (startPosition) => {
+        const { lat, long, heading } = startPosition;
+        initialPosition = startPosition;
 
-      socket.emit(ServerEvents.INIT, { lat, long }, 0, heading);
-    });
+        socket.emit(ServerEvents.INIT, {
+          position: { lat, long },
+          distance: 0,
+          heading,
+        });
+      })
 
-    socket.on(ClientEvents.START, (startPosition) => {
-      socket.emit(ServerEvents.MARKER, startPosition);
+      .on(ClientEvents.START, (startPosition) => {
+        socket.emit(ServerEvents.MARKER, startPosition);
 
-      const { lat, long, speed, heading } = startPosition;
-      currentHeading = Number(heading);
-      currentPosition = { lat, long };
+        const { lat, long, speed, heading } = startPosition;
+        currentHeading = Number(heading);
+        currentPosition = { lat, long };
 
-      const generateNewHeading = () => {
-        currentHeading = applyRandomBearing(currentHeading);
+        const generateNewHeading = () => {
+          currentHeading = applyRandomBearing(currentHeading);
 
-        clearInterval(headingInterval);
-        headingInterval = setInterval(
-          generateNewHeading,
-          Math.random() * 5_000,
-        );
-      };
+          clearInterval(headingInterval);
+          headingInterval = setInterval(
+            generateNewHeading,
+            Math.random() * 5_000,
+          );
+        };
 
-      generateNewHeading();
+        generateNewHeading();
 
-      const emitNewHeading = () => {
-        const newPosition = updatePosition(
-          currentPosition.lat,
-          currentPosition.long,
-          speed,
-          currentHeading,
-          POSITION_UPDATE_INTERVAL / 1_000,
-        );
-        const distance = getDistance({ lat, long }, newPosition);
+        const emitNewHeading = () => {
+          const newPosition = updatePosition(
+            currentPosition.lat,
+            currentPosition.long,
+            speed,
+            currentHeading,
+            POSITION_UPDATE_INTERVAL / 1_000,
+          );
+          const distance = getDistance({ lat, long }, newPosition);
+
+          socket.emit(ServerEvents.POSITION, {
+            position: newPosition,
+            distance,
+            heading: currentHeading,
+          });
+
+          currentPosition = newPosition;
+        };
 
         socket.emit(ServerEvents.POSITION, {
-          position: newPosition,
-          distance,
-          heading: currentHeading,
+          position: startPosition,
+          distance: 0,
+          heading,
         });
 
-        currentPosition = newPosition;
-      };
+        positionInterval = setInterval(
+          emitNewHeading,
+          POSITION_UPDATE_INTERVAL,
+        );
+      })
 
-      socket.emit(ServerEvents.POSITION, {
-        position: startPosition,
-        distance: 0,
-        heading,
+      .on(ClientEvents.STOP, () => {
+        socket.emit(ServerEvents.STOPPED);
+
+        clearInterval(positionInterval);
+        clearInterval(headingInterval);
+      })
+
+      .on(ClientEvents.RESET, () => {
+        socket.emit(ServerEvents.RESET, initialPosition);
+      })
+
+      .on(ClientEvents.CLOSE, () => {
+        console.log('websocket connection closed');
+      })
+
+      .on(ClientEvents.ERROR, (err: Error) => {
+        console.error(err);
+      })
+
+      .on(ClientEvents.DISCONNECT, (reason: string) => {
+        console.log(`socket ${socket.id} disconnected due to ${reason}`);
       });
-      positionInterval = setInterval(emitNewHeading, POSITION_UPDATE_INTERVAL);
-    });
-
-    socket.on(ClientEvents.STOP, () => {
-      socket.emit(ServerEvents.STOPPED);
-
-      clearInterval(positionInterval);
-      clearInterval(headingInterval);
-    });
-
-    socket.on(ClientEvents.RESET, () => {
-      socket.emit(ServerEvents.RESET, initialPosition);
-    });
-
-    socket.on(ClientEvents.CLOSE, () => {
-      console.log('websocket connection closed');
-    });
-
-    socket.on(ClientEvents.ERROR, (err: Error) => {
-      console.error(err);
-    });
-
-    socket.on(ClientEvents.DISCONNECT, (reason: string) => {
-      console.log(`socket ${socket.id} disconnected due to ${reason}`);
-    });
   },
 );
 

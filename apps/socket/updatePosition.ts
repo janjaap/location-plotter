@@ -8,8 +8,8 @@ export const updatePosition = (
   durationInSeconds: number,
 ) => {
   // Constants
-  const metersPerSecond = speedKnots * (1852 / 3600); // Convert knots to m/s
-  const distanceTraveled = metersPerSecond * durationInSeconds; // distance = speed * time
+  const knotsInMetersPerSecond = speedKnots * (1852 / 3600); // Convert knots to m/s
+  const distanceTraveled = knotsInMetersPerSecond * durationInSeconds; // distance = speed * time
 
   // Convert to radians
   const headingRad = (headingDeg * Math.PI) / 180;

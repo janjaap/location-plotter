@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "pnpm dlx tsx index.ts",
-    "test": "vitest --config ../../vite.config.ts"
+    "test": "vitest ./ --config ../../vite.config.ts"
   },
   "keywords": [],
   "author": "",
