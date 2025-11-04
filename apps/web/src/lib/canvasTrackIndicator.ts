@@ -2,13 +2,18 @@ import {
   ServerEvents,
   type Coordinate,
   type PositionPayload,
+  type StartPositionPayload,
 } from 'socket/types';
 import { clientSocket } from './clientSocket';
-import { GeographicalArea } from './geographicalArea';
+import { Observable } from './Obserservable';
+import { rotationFromHeading } from './rotationFromHeading';
 import { mobMarkerColor, trackIndicatorColor } from './tokens';
 
-export class CanvasTrackIndicator extends GeographicalArea {
+export class CanvasTrackIndicator extends Observable {
   private _strokeWidth = 4;
+
+  private heading: number | undefined;
+  private position: Coordinate | undefined;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     super(center, canvas);
@@ -16,67 +21,111 @@ export class CanvasTrackIndicator extends GeographicalArea {
     this.init();
   }
 
+  private centerCanvas() {
+    this.centerContext(this.canvas.clientWidth, this.canvas.clientHeight);
+  }
+
   get strokeWidth() {
     return this._strokeWidth / this.zoomLevel;
   }
 
-  set zoomLevel(value: number) {
-    super.zoomLevel = value;
+  set zoom(value: number) {
+    if (this.zoomLevel === value) return;
 
-    this.clearCanvas();
-    this.centerContextToCoordinate();
-  }
+    this.zoomLevel = value;
 
-  init = () => {
-    clientSocket.on(ServerEvents.POSITION, this.moveIndicator);
-    clientSocket.on(ServerEvents.RESET, this.reset);
+    if (!this.heading) return;
 
     this.reset();
+
+    this.drawOwnPosition({
+      position: this.position ?? this.center,
+      heading: this.heading,
+      distance: 0,
+    });
+  }
+
+  private onExternalInit = ({
+    heading,
+    position,
+    distance,
+  }: PositionPayload) => {
+    this.heading = heading;
+    this.position = position;
+
+    this.drawOwnPosition({ position, heading, distance });
   };
 
-  reset = () => {
+  private onExternalReset = ({ lat, long, heading }: StartPositionPayload) => {
+    this.reset();
+
+    this.drawOwnPosition({
+      position: { lat, long },
+      heading,
+      distance: 0,
+    });
+  };
+
+  private init = () => {
+    this.setObserver(() => {
+      if (!this.heading || !this.position) return;
+
+      this.reset();
+
+      this.drawOwnPosition({
+        position: this.position ?? this.center,
+        heading: this.heading,
+        distance: 0,
+      });
+    });
+
+    clientSocket.on(ServerEvents.INIT, this.onExternalInit);
+    clientSocket.on(ServerEvents.POSITION, this.drawOwnPosition);
+    clientSocket.on(ServerEvents.RESET, this.onExternalReset);
+  };
+
+  private reset = () => {
     this.clearCanvas();
-    this.centerContextToCoordinate();
+    this.centerCanvas();
     this.drawMobMarker();
   };
 
-  drawMobMarker = () => {
-    this.drawDot({ x: 0, y: 0, radius: 3, fillStyle: mobMarkerColor });
+  private drawMobMarker = () => {
+    this.draw(() => {
+      this.context.fillStyle = mobMarkerColor;
+      this.drawCircle(0, 0, 3, 'fill');
+    });
   };
 
-  moveIndicator = ({ position }: PositionPayload) => {
+  private drawOwnPosition = ({ position, heading }: PositionPayload) => {
     this.reset();
 
     const { x, y } = this.getGridCoordinate(position);
-    this.drawDot({ x, y, radius: 3, fillStyle: trackIndicatorColor });
-  };
+    const bearing = rotationFromHeading(this.heading ?? heading, heading);
 
-  drawDot = ({
-    x,
-    y,
-    radius,
-    fillStyle,
-  }: {
-    x: number;
-    y: number;
-    radius: number;
-    fillStyle: string;
-  }) => {
+    // TODO: smooth animation from one heading to another
+
     this.draw(() => {
-      this.context.fillStyle = fillStyle;
+      this.context.lineWidth = 1;
+      this.context.strokeStyle = trackIndicatorColor;
 
       this.context.translate(x, y);
-      this.context.beginPath();
-      this.context.arc(0, 0, radius, 0, Math.PI * 2);
-      this.context.closePath();
-      this.context.fill();
+      this.context.rotate((Math.PI / 180) * bearing);
+
+      this.drawCircle(0, 0, 13, 'stroke');
+      this.drawCircle(0, 0, 6, 'stroke');
+      this.drawLine({ from: { x: 0, y: 0 }, to: { x: 0, y: -40 } });
     });
+
+    this.heading = heading;
+    this.position = position;
   };
 
   teardown = () => {
     super.teardown();
 
-    clientSocket.off(ServerEvents.POSITION, this.moveIndicator);
-    clientSocket.off(ServerEvents.RESET, this.reset);
+    clientSocket.off(ServerEvents.INIT, this.onExternalInit);
+    clientSocket.off(ServerEvents.POSITION, this.drawOwnPosition);
+    clientSocket.off(ServerEvents.RESET, this.onExternalReset);
   };
 }

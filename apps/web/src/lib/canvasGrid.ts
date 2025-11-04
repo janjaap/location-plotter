@@ -2,10 +2,11 @@ import { ServerEvents, type Coordinate } from 'socket/types';
 import type { FromTo } from '../types';
 import { coordsToDmsFormatted, ddToDms } from '../utils/ddToDms';
 import { clientSocket } from './clientSocket';
-import { GeographicalArea } from './geographicalArea';
+import { Observable } from './Obserservable';
+import { Paintable } from './Paintable';
 import { gridLabelColor, gridLineColor, subgridLabelColor } from './tokens';
 
-export class CanvasGrid extends GeographicalArea {
+export class CanvasGrid extends Observable {
   /**
    * Distance from the edges of the canvas where grid lines won't be drawn
    */
@@ -15,11 +16,14 @@ export class CanvasGrid extends GeographicalArea {
     bottom: 40,
     left: 90,
   };
+
   /**
    * Distance to the edge to determine the length of the grid lines
    */
   private gridPadding = 16;
+
   private labelFontSize = 12;
+
   private labelMaxWidth = 80;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
@@ -28,30 +32,33 @@ export class CanvasGrid extends GeographicalArea {
     this.init();
   }
 
-  init = () => {
-    this.reset();
-
-    this.observeCanvasResize(this.handleResize);
+  private init = () => {
+    this.setObserver(this.redrawGrid);
+    this.redrawGrid();
 
     clientSocket.on(ServerEvents.RESET, this.reset);
   };
 
   get columnIndices() {
     return Array.from(
-      { length: this.visibleLongitudeDegrees },
-      (_, i) => i - Math.floor(this.visibleLongitudeDegrees / 2),
+      { length: Paintable.MAX_VISIBLE_DEGREES_LONG },
+      (_, i) => i - Math.floor(Paintable.MAX_VISIBLE_DEGREES_LONG / 2),
     );
   }
 
   get rowIndices() {
     return Array.from(
-      { length: this.visibleLatitudeDegrees },
-      (_, i) => i - Math.floor(this.visibleLatitudeDegrees / 2),
+      { length: Paintable.MAX_VISIBLE_DEGREES_LAT },
+      (_, i) => i - Math.floor(Paintable.MAX_VISIBLE_DEGREES_LAT / 2),
     );
   }
 
-  set zoomLevel(value: number) {
-    super.zoomLevel = value;
+  set zoom(value: number) {
+    if (this.zoomLevel === value) return;
+
+    this.zoomLevel = value;
+    this.subdivisions = value;
+
     this.redrawGrid();
   }
 
@@ -65,67 +72,63 @@ export class CanvasGrid extends GeographicalArea {
     };
   }
 
-  reset = () => {
-    this.zoomLevel = 1;
-    this.subdivisions = 1;
-
+  private reset = () => {
     this.redrawGrid();
   };
 
-  redrawGrid = () => {
+  private redrawGrid = () => {
     this.clearCanvas();
+    this.centerContext(this.canvas.clientWidth, this.canvas.clientHeight);
     this.drawLongitudeLines();
     this.drawLatitudeLines();
-  };
-
-  handleResize = () => {
-    this.redrawGrid();
   };
 
   /**
    * Get the pixel difference needed to offset the grid lines based on the current center coordinate
    */
-  getGridDiff = (position: 'latitude' | 'longitude', seconds: number) => {
+  getGridDiff(position: 'latitude' | 'longitude', seconds: number) {
     const diffPercentage = seconds / 60;
     const base =
       position === 'latitude' ? this.gridRowHeight : this.gridColumnWidth;
 
     return base * diffPercentage;
-  };
+  }
 
-  drawGridLine = ({ from, to }: FromTo) => {
+  drawGridLine({ from, to }: FromTo) {
     this.drawInBackground(() => {
-      this.context.lineWidth = 2;
+      this.context.lineWidth = 1.5;
       this.context.strokeStyle = gridLineColor;
+      this.context.lineDashOffset = 0;
+      this.context.setLineDash([]);
+
       this.drawLine({ from, to });
     });
-  };
+  }
 
-  drawSubdivisionLine = ({ from, to }: FromTo) => {
+  drawSubdivisionLine({ from, to }: FromTo) {
     this.drawInBackground(() => {
-      this.context.lineWidth = 1;
+      this.context.lineWidth = 0.5;
       this.context.strokeStyle = subgridLabelColor;
+      this.context.lineDashOffset = 1;
       this.context.setLineDash([4]);
+
       this.drawLine({ from, to });
     });
-  };
+  }
 
-  drawSubgridLineLabel = (...args: Parameters<typeof this.drawLabel>) => {
-    this.context.fillStyle = subgridLabelColor;
+  drawSubgridLineLabel(text: string, x: number, y: number) {
+    this.drawLabel(text, x, y, subgridLabelColor);
+  }
 
-    this.drawLabel(...args);
-  };
+  drawGridLineLabel(text: string, x: number, y: number) {
+    this.drawLabel(text, x, y, gridLabelColor);
+  }
 
-  drawGridLineLabel = (...args: Parameters<typeof this.drawLabel>) => {
-    this.context.fillStyle = gridLabelColor;
-
-    this.drawLabel(...args);
-  };
-
-  drawLabel = (text: string, x: number, y: number) => {
-    this.drawInBackground(() => {
+  drawLabel(text: string, x: number, y: number, fillStyle: string) {
+    this.draw(() => {
       this.context.font = `${this.labelFontSize}px system-ui`;
       this.context.textBaseline = 'middle';
+      this.context.fillStyle = fillStyle;
       this.context.fillText(
         text,
         Math.round(x),
@@ -133,12 +136,12 @@ export class CanvasGrid extends GeographicalArea {
         this.labelMaxWidth,
       );
     });
-  };
+  }
 
   /**
    * Horizontal grid lines
    */
-  drawLatitudeLines = () => {
+  drawLatitudeLines() {
     const { degrees, minutes, seconds } = ddToDms(this.center.lat);
     const gridDiff = this.getGridDiff('latitude', seconds);
     const subdivHeight = this.gridRowHeight / (this.subdivisions + 1);
@@ -174,6 +177,7 @@ export class CanvasGrid extends GeographicalArea {
             degrees,
             minutes: minutes - linePosition,
           });
+
           this.drawGridLineLabel(label, labelX, yOffset);
         }
       }
@@ -208,12 +212,12 @@ export class CanvasGrid extends GeographicalArea {
         this.drawSubgridLineLabel(label, labelX, subdivYOffset);
       }
     });
-  };
+  }
 
   /**
    * Vertical grid lines
    */
-  drawLongitudeLines = () => {
+  drawLongitudeLines() {
     const { degrees, minutes, seconds } = ddToDms(this.center.long);
     const gridDiff = this.getGridDiff('longitude', seconds);
     const subdivWidth = this.gridColumnWidth / (this.subdivisions + 1);
@@ -248,6 +252,7 @@ export class CanvasGrid extends GeographicalArea {
             degrees,
             minutes: minutes + linePosition + 1,
           });
+
           this.drawGridLineLabel(label, xOffset, labelY);
         }
       }
@@ -257,8 +262,6 @@ export class CanvasGrid extends GeographicalArea {
         const fitsWithinBounds =
           subdivXOffset <= this.bounds.right &&
           subdivXOffset >= this.bounds.left;
-
-        // debugger;
 
         if (!fitsWithinBounds || subdivXOffset === xOffset) continue;
 
@@ -285,7 +288,7 @@ export class CanvasGrid extends GeographicalArea {
         this.drawSubgridLineLabel(label, subdivXOffset, labelY);
       }
     });
-  };
+  }
 
   teardown = () => {
     super.teardown();

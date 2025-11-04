@@ -3,3 +3,10 @@
   gap: 1rem;
   flex-direction: column;
 }
+
+.inlineLabel {
+  align-items: center;
+  justify-content: space-between;
+  display: inline-flex;
+  width: 100%;
+}

@@ -1,6 +1,11 @@
-import { useState } from 'react';
-import { ServerEvents, type Coordinate } from 'socket/types';
-import { useSocketEvent } from '../../hooks/useSocketEvent';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ServerEvents,
+  type Coordinate,
+  type PositionPayload,
+  type StartPositionPayload,
+} from 'socket/types';
+import { clientSocket } from '../../lib/clientSocket';
 import { rotationFromHeading } from '../../lib/rotationFromHeading';
 import { MapCanvas } from '../MapCanvas/MapCanvas';
 import styles from './LiveTrack.module.css';
@@ -9,31 +14,56 @@ export const LiveTrack = () => {
   const [center, setCenter] = useState<Coordinate | null>(null);
   const [needleRotation, setNeedleRotation] = useState<number | null>(null);
 
-  useSocketEvent(ServerEvents.INIT, (initPosition, _distance, initHeading) => {
-    setCenter(initPosition);
-    setNeedleRotation(initHeading);
-  });
+  const updatePosition = useCallback(
+    ({ heading }: PositionPayload) => {
+      if (needleRotation === null) return;
 
-  useSocketEvent(ServerEvents.MARKER, (position) => {
-    setCenter(position);
-  });
+      const rotation = rotationFromHeading(needleRotation, heading);
 
-  useSocketEvent(ServerEvents.RESET, ({ heading }) => {
-    setNeedleRotation(heading);
-    setCenter(null);
-  });
+      setNeedleRotation(rotation);
+    },
+    [needleRotation],
+  );
 
-  useSocketEvent(ServerEvents.STOPPED, () => {
-    setCenter(null);
-  });
+  useEffect(() => {
+    const init = ({ position, heading }: PositionPayload) => {
+      setCenter(position);
+      setNeedleRotation(heading);
+    };
 
-  useSocketEvent(ServerEvents.POSITION, ({ heading }) => {
-    if (needleRotation === null) return;
+    const marker = (position: Coordinate) => {
+      setCenter(position);
+    };
 
-    const rotation = rotationFromHeading(needleRotation, heading);
+    const reset = ({ lat, long, heading }: StartPositionPayload) => {
+      setNeedleRotation(heading);
+      setCenter({ lat, long });
+    };
 
-    setNeedleRotation(rotation);
-  });
+    const stopped = () => {
+      setCenter(null);
+    };
+
+    clientSocket.on(ServerEvents.INIT, init);
+    clientSocket.on(ServerEvents.MARKER, marker);
+    clientSocket.on(ServerEvents.RESET, reset);
+    clientSocket.on(ServerEvents.STOPPED, stopped);
+
+    return () => {
+      clientSocket.off(ServerEvents.INIT, init);
+      clientSocket.off(ServerEvents.MARKER, marker);
+      clientSocket.off(ServerEvents.RESET, reset);
+      clientSocket.off(ServerEvents.STOPPED, stopped);
+    };
+  }, []);
+
+  useEffect(() => {
+    clientSocket.on(ServerEvents.POSITION, updatePosition);
+
+    return () => {
+      clientSocket.off(ServerEvents.POSITION, updatePosition);
+    };
+  }, [updatePosition]);
 
   return (
     <div className={styles.liveTrack}>

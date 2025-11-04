@@ -4,10 +4,10 @@ import {
   type PositionPayload,
 } from 'socket/types';
 import { clientSocket } from './clientSocket';
-import { GeographicalArea } from './geographicalArea';
+import { Observable } from './Obserservable';
 import { trackColor } from './tokens';
 
-export class CanvasTrack extends GeographicalArea {
+export class CanvasTrack extends Observable {
   private trackPoints: Coordinate[] = [];
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
@@ -16,32 +16,33 @@ export class CanvasTrack extends GeographicalArea {
     this.init();
   }
 
-  set zoomLevel(value: number) {
-    super.zoomLevel = value;
+  set zoom(value: number) {
+    if (this.zoomLevel === value) return;
 
+    this.zoomLevel = value;
     this.clearCanvas();
     this.trackPoints.forEach(this.drawLegLine);
   }
 
-  init = () => {
-    this.clearCanvas();
-    this.observeCanvasResize(this.handleResize);
+  private init = () => {
+    this.setObserver(this.handleResize);
 
     clientSocket.on(ServerEvents.POSITION, this.drawLeg);
     clientSocket.on(ServerEvents.RESET, this.clearCanvas);
   };
 
-  handleResize = () => {
+  private handleResize = () => {
     this.clearCanvas();
     this.trackPoints.forEach(this.drawLegLine);
   };
 
-  drawLegLine = (position: Coordinate) => {
+  private drawLegLine = (position: Coordinate) => {
     const { x, y } = this.getGridCoordinate(position);
 
     this.draw(() => {
       this.context.strokeStyle = trackColor;
-      this.context.lineWidth = 2;
+      this.context.lineWidth = 10;
+
       this.context.lineTo(Math.round(x), Math.round(y));
       this.context.stroke();
     });
@@ -49,13 +50,11 @@ export class CanvasTrack extends GeographicalArea {
 
   drawLeg = ({ position }: PositionPayload) => {
     this.trackPoints.push(position);
-
     this.drawLegLine(position);
   };
 
   teardown = () => {
     super.teardown();
-
     clientSocket.off(ServerEvents.POSITION, this.drawLeg);
     clientSocket.off(ServerEvents.RESET, this.clearCanvas);
   };

@@ -1,5 +1,5 @@
 export type FromTo = {
-  from: {
+  from?: {
     x: number;
     y: number;
   };

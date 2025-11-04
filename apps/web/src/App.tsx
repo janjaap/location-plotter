@@ -1,19 +1,17 @@
 import './App.css';
 import { LiveTrack } from './components/LiveTrack/LiveTrack';
-import { clientSocket } from './lib/clientSocket';
 
 import { ParamsForm } from './components/ParamsForm/ParamsForm';
+import { ZoomProvider } from './providers/ZoomProvider/ZoomProvider';
 
 function App() {
-  clientSocket.onAnyOutgoing((event, ...args) => {
-    console.log(`Outgoing: ${event}`, args);
-  });
-
   return (
     <main>
-      <ParamsForm />
+      <ZoomProvider>
+        <ParamsForm />
 
-      <LiveTrack />
+        <LiveTrack />
+      </ZoomProvider>
     </main>
   );
 }

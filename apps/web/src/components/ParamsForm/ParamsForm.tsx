@@ -8,10 +8,13 @@ import {
 import {
   ClientEvents,
   ServerEvents,
+  type PositionPayload,
   type StartPositionPayload,
 } from 'socket/types';
-import { useSocketEvent } from '../../hooks/useSocketEvent';
+import { Canvas } from '../../lib/canvas';
 import { clientSocket } from '../../lib/clientSocket';
+import { useZoom } from '../../providers/ZoomProvider/ZoomProvider';
+import { ddToDmsFormatted } from '../../utils/ddToDms';
 import styles from './ParamsForm.module.css';
 
 const startPosition: StartPositionPayload = {
@@ -35,19 +38,36 @@ const initialPositionState = {
 export const ParamsForm = () => {
   const [isTracking, setIsTracking] = useState(false);
   const [formState, setFormState] = useState(initialPositionState);
+  const { zoomLevel, updateZoomLevel } = useZoom();
 
   useEffect(() => {
     clientSocket.emit(ClientEvents.INIT, initialPositionState);
+
+    const updatePosition = ({
+      position,
+      distance,
+      heading,
+    }: PositionPayload) => {
+      const { lat, long } = position;
+
+      updateStateValue('lat', lat);
+      updateStateValue('long', long);
+      updateStateValue('distance', distance);
+      updateStateValue('heading', heading);
+    };
+
+    const reset = () => {
+      updateZoomLevel(Canvas.DEFAULT_ZOOM_LEVEL);
+    };
+
+    clientSocket.on(ServerEvents.POSITION, updatePosition);
+    clientSocket.on(ServerEvents.RESET, reset);
+
+    return () => {
+      clientSocket.off(ServerEvents.POSITION, updatePosition);
+      clientSocket.off(ServerEvents.RESET, reset);
+    };
   }, []);
-
-  useSocketEvent(ServerEvents.POSITION, ({ position, distance, heading }) => {
-    const { lat, long } = position;
-
-    updateStateValue('lat', lat);
-    updateStateValue('long', long);
-    updateStateValue('distance', distance);
-    updateStateValue('heading', heading);
-  });
 
   const [, submitAction] = useActionState(
     (_previousState: null, formData: Iterable<[PropertyKey, unknown]>) => {
@@ -79,6 +99,10 @@ export const ParamsForm = () => {
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const { name } = event.target;
     let value: number | string = event.target.value;
+
+    if (!name || !value) {
+      throw new Error('Invalid input');
+    }
 
     if (name === 'heading' && (Number(value) < 1 || Number(value) > 360)) {
       if (Number(value) < 1) {
@@ -112,55 +136,66 @@ export const ParamsForm = () => {
     setFormState(initialPositionState);
   }
 
+  function onZoomChange(event: ChangeEvent<HTMLInputElement>) {
+    const value = Number(event.target.value);
+    updateZoomLevel(value);
+  }
+
   return (
     <div className={styles.paramsForm}>
       <form action={submitAction}>
         <label>
           Latitude
           <input
-            type="number"
+            disabled={isTracking}
             name="lat"
-            value={formState.lat}
-            step="0.000001"
             onChange={handleChange}
+            step="0.000001"
+            type="number"
+            value={formState.lat}
           />
+          <small>{ddToDmsFormatted(formState.lat)}</small>
         </label>
 
         <label>
           Longitude
           <input
-            type="number"
+            disabled={isTracking}
             name="long"
-            value={formState.long}
-            step="0.0000001"
             onChange={handleChange}
+            step="0.0000001"
+            type="number"
+            value={formState.long}
           />
+          <small>{ddToDmsFormatted(formState.long)}</small>
         </label>
 
         <label>
           Speed (kts)
           <input
-            type="number"
+            disabled={isTracking}
             name="speed"
-            value={formState.speed}
-            step="0.1"
             onChange={handleChange}
+            step="1"
+            type="number"
+            value={formState.speed}
           />
         </label>
 
         <label>
           Heading (degrees)
           <input
-            type="number"
+            disabled={isTracking}
             name="heading"
-            value={formState.heading}
-            step="1"
             onChange={handleChange}
+            step="1"
+            type="number"
+            value={formState.heading}
           />
         </label>
 
         <button type="submit" disabled={isTracking}>
-          Start
+          Start MOB
         </button>
 
         <button disabled={!isTracking} onClick={stopTracking}>
@@ -168,6 +203,20 @@ export const ParamsForm = () => {
         </button>
 
         <button onClick={resetTracking}>Reset</button>
+
+        <label>
+          Zoom level ({zoomLevel})
+          <input
+            id="zoomLevel"
+            name="zoomLevel"
+            max="20"
+            min={1}
+            onChange={onZoomChange}
+            step="1"
+            type="range"
+            value={zoomLevel}
+          />
+        </label>
       </form>
 
       <div>Distance: {formState.distance.toFixed(0)} meters</div>
