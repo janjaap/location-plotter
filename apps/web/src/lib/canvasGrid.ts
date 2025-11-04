@@ -13,12 +13,12 @@ export class CanvasGrid extends Observable {
   private gridLimit = {
     top: 40,
     right: 40,
-    bottom: 40,
-    left: 90,
+    bottom: 40, // prevent overlap with longitude labels
+    left: 90, // prevent overlap with latitude labels
   };
 
   /**
-   * Distance to the edge to determine the length of the grid lines
+   * Distance in pixels
    */
   private gridPadding = 16;
 
@@ -53,6 +53,22 @@ export class CanvasGrid extends Observable {
     );
   }
 
+  get gridColumnWidth() {
+    return (
+      ((this.canvas.width - 2 * this.gridPadding) /
+        Canvas.MAX_VISIBLE_DEGREES_LONG) *
+      this.zoomLevel
+    );
+  }
+
+  get gridRowHeight() {
+    return (
+      ((this.canvas.height - 2 * this.gridPadding) /
+        Canvas.MAX_VISIBLE_DEGREES_LAT) *
+      this.zoomLevel
+    );
+  }
+
   set zoom(value: number) {
     if (this.zoomLevel === value) return;
 
@@ -78,9 +94,25 @@ export class CanvasGrid extends Observable {
 
   private redrawGrid = () => {
     this.clearCanvas();
-    this.centerContext(this.canvas.clientWidth, this.canvas.clientHeight);
+    this.centerContext();
     this.drawLongitudeLines();
     this.drawLatitudeLines();
+
+    this.draw(() => {
+      this.context.strokeStyle = 'white';
+      this.context.lineWidth = 1;
+      this.drawLine({
+        // vertical
+        from: { x: 0, y: -this.canvas.height / 2 },
+        to: { x: 0, y: this.canvas.height / 2 },
+      });
+
+      this.drawLine({
+        // horizontal
+        from: { x: -this.canvas.width / 2, y: 0 },
+        to: { x: this.canvas.width / 2, y: 0 },
+      });
+    });
   };
 
   /**
@@ -176,6 +208,7 @@ export class CanvasGrid extends Observable {
           const label = coordsToDmsFormatted({
             degrees,
             minutes: minutes - linePosition,
+            seconds: 0,
           });
 
           this.drawGridLineLabel(label, labelX, yOffset);
@@ -221,12 +254,14 @@ export class CanvasGrid extends Observable {
     const { degrees, minutes, seconds } = ddToDms(this.center.long);
     const gridDiff = this.getGridDiff('longitude', seconds);
     const subdivWidth = this.gridColumnWidth / (this.subdivisions + 1);
-
     this.context.textAlign = 'center';
 
     this.columnIndices.forEach((linePosition) => {
       const xOffset =
-        linePosition * this.gridColumnWidth + this.gridColumnWidth - gridDiff;
+        linePosition * this.gridColumnWidth +
+        this.gridColumnWidth -
+        gridDiff -
+        this.gridPadding / 2;
       const fromYPos = -this.canvas.height / 2 + this.gridPadding;
       const toYPos = this.canvas.height / 2 - this.gridLimit.bottom;
       const labelY = this.canvas.height / 2 - this.gridPadding;
@@ -251,6 +286,7 @@ export class CanvasGrid extends Observable {
           const label = coordsToDmsFormatted({
             degrees,
             minutes: minutes + linePosition + 1,
+            seconds: 0,
           });
 
           this.drawGridLineLabel(label, xOffset, labelY);

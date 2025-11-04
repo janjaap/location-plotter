@@ -22,7 +22,7 @@ export class CanvasTrackIndicator extends Observable {
   }
 
   private centerCanvas() {
-    this.centerContext(this.canvas.clientWidth, this.canvas.clientHeight);
+    this.centerContext();
   }
 
   get strokeWidth() {
@@ -100,6 +100,9 @@ export class CanvasTrackIndicator extends Observable {
   private drawOwnPosition = ({ position, heading }: PositionPayload) => {
     this.reset();
 
+    const indicatorWidth = 14;
+    const indicatorHeight = 6;
+
     const { x, y } = this.getGridCoordinate(position);
     const bearing = rotationFromHeading(this.heading ?? heading, heading);
 
@@ -112,8 +115,8 @@ export class CanvasTrackIndicator extends Observable {
       this.context.translate(x, y);
       this.context.rotate((Math.PI / 180) * bearing);
 
-      this.drawCircle(0, 0, 13, 'stroke');
-      this.drawCircle(0, 0, 6, 'stroke');
+      this.drawCircle(0, 0, indicatorWidth, 'stroke');
+      this.drawCircle(0, 0, indicatorHeight, 'stroke');
       this.drawLine({ from: { x: 0, y: 0 }, to: { x: 0, y: -40 } });
     });
 

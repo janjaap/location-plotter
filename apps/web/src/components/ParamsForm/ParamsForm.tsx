@@ -19,12 +19,12 @@ import styles from './ParamsForm.module.css';
 
 const startPosition: StartPositionPayload = {
   lat: 52.95138889,
-  long: 4.798795456931373,
+  long: 4.79861045693137,
 
   // middle of minutes
   // lat: 52.95833333,
   // long: 4.775,
-  // long: 2.4353453543,
+  // long: 2.4340053543,
 
   speed: 12,
   heading: 289,
@@ -67,7 +67,7 @@ export const ParamsForm = () => {
       clientSocket.off(ServerEvents.POSITION, updatePosition);
       clientSocket.off(ServerEvents.RESET, reset);
     };
-  }, []);
+  }, [updateZoomLevel]);
 
   const [, submitAction] = useActionState(
     (_previousState: null, formData: Iterable<[PropertyKey, unknown]>) => {
@@ -209,7 +209,7 @@ export const ParamsForm = () => {
           <input
             id="zoomLevel"
             name="zoomLevel"
-            max="20"
+            max="10"
             min={1}
             onChange={onZoomChange}
             step="1"

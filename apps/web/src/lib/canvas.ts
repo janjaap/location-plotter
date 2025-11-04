@@ -3,15 +3,13 @@ import type { FromTo } from '../types';
 import { gridCoordinate } from './gridCoordinate';
 
 export abstract class Canvas {
-  static DEFAULT_ZOOM_LEVEL = 10;
+  static DEFAULT_ZOOM_LEVEL = 1;
   static MAX_VISIBLE_DEGREES_LAT = 3;
   static MAX_VISIBLE_DEGREES_LONG = 3;
 
-  protected canvas: HTMLCanvasElement | OffscreenCanvas;
+  protected canvas: HTMLCanvasElement;
 
-  protected context!:
-    | CanvasRenderingContext2D
-    | OffscreenCanvasRenderingContext2D;
+  protected context!: CanvasRenderingContext2D;
 
   // protected zoomLevel = Canvas.DEFAULT_ZOOM_LEVEL;
 
@@ -24,7 +22,7 @@ export abstract class Canvas {
 
   subdivisions = this.zoomLevel;
 
-  constructor(center: Coordinate, canvas: HTMLCanvasElement | OffscreenCanvas) {
+  constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     this.center = center;
     this.canvas = canvas;
 
@@ -35,7 +33,7 @@ export abstract class Canvas {
     }
 
     this.context = context as CanvasRenderingContext2D;
-    this.context.textRendering = 'geometricPrecision';
+    this.context.textRendering = 'optimizeLegibility';
   }
 
   get gridColumnWidth() {
@@ -50,9 +48,9 @@ export abstract class Canvas {
     );
   }
 
-  centerContext(width: number, height: number) {
-    this.canvas.width = width;
-    this.canvas.height = height;
+  centerContext() {
+    this.canvas.width = this.canvas.clientWidth;
+    this.canvas.height = this.canvas.clientHeight;
 
     this.context.translate(this.canvas.width / 2, this.canvas.height / 2);
   }

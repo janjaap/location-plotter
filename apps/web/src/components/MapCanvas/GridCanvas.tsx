@@ -1,18 +1,18 @@
 import { useEffect, useRef } from 'react';
-import { CanvasGrid } from '../../lib/canvasGrid';
+import { Grid } from '../../lib/Grid';
 import { useZoom } from '../../providers/ZoomProvider/ZoomProvider';
 import type { CanvasProps } from './MapCanvas';
 import styles from './MapCanvas.module.css';
 
 export const GridCanvas = ({ center }: CanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const gridCanvasRef = useRef<CanvasGrid | null>(null);
+  const gridCanvasRef = useRef<Grid | null>(null);
   const { zoomLevel } = useZoom();
 
   useEffect(() => {
     if (!canvasRef.current || !center) return;
 
-    gridCanvasRef.current = new CanvasGrid(center, canvasRef.current);
+    gridCanvasRef.current = new Grid(center, canvasRef.current);
 
     const gridCanvas = gridCanvasRef.current;
 
@@ -24,10 +24,12 @@ export const GridCanvas = ({ center }: CanvasProps) => {
   useEffect(() => {
     if (!gridCanvasRef.current) return;
 
-    gridCanvasRef.current.zoom = zoomLevel;
+    // gridCanvasRef.current.zoom = zoomLevel;
   }, [zoomLevel]);
 
   if (!center) return null;
+
+  console.log({ center });
 
   return <canvas className={styles.gridCanvas} ref={canvasRef} />;
 };
