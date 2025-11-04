@@ -1,9 +1,9 @@
 import { ServerEvents, type Coordinate } from 'socket/types';
 import type { FromTo } from '../types';
 import { coordsToDmsFormatted, ddToDms } from '../utils/ddToDms';
+import { Canvas } from './canvas';
 import { clientSocket } from './clientSocket';
 import { Observable } from './Obserservable';
-import { Paintable } from './Paintable';
 import { gridLabelColor, gridLineColor, subgridLabelColor } from './tokens';
 
 export class CanvasGrid extends Observable {
@@ -41,15 +41,15 @@ export class CanvasGrid extends Observable {
 
   get columnIndices() {
     return Array.from(
-      { length: Paintable.MAX_VISIBLE_DEGREES_LONG },
-      (_, i) => i - Math.floor(Paintable.MAX_VISIBLE_DEGREES_LONG / 2),
+      { length: Canvas.MAX_VISIBLE_DEGREES_LONG },
+      (_, i) => i - Math.floor(Canvas.MAX_VISIBLE_DEGREES_LONG / 2),
     );
   }
 
   get rowIndices() {
     return Array.from(
-      { length: Paintable.MAX_VISIBLE_DEGREES_LAT },
-      (_, i) => i - Math.floor(Paintable.MAX_VISIBLE_DEGREES_LAT / 2),
+      { length: Canvas.MAX_VISIBLE_DEGREES_LAT },
+      (_, i) => i - Math.floor(Canvas.MAX_VISIBLE_DEGREES_LAT / 2),
     );
   }
 
