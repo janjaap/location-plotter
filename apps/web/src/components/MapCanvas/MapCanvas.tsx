@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react';
-import {
-  ServerEvents,
-  type Coordinate,
-  type PositionPayload,
-} from 'socket/types';
+import { ServerEvents, type Coordinate, type PositionPayload } from 'socket/types';
 import { clientSocket } from '../../lib/clientSocket';
-import { GridCanvas } from './GridCanvas';
+import { Grid } from './Grid';
 import styles from './MapCanvas.module.css';
+import { Ship } from './Ship';
 import { TrackCanvas } from './TrackCanvas';
-import { TrackIndicatorCanvas } from './TrackIndicatorCanvas';
 
 export type CanvasProps = {
   center: Coordinate | null;
@@ -38,9 +34,9 @@ export const MapCanvas = () => {
   return (
     <div className={styles.mapCanvasContainer}>
       <div className={styles.canvasContainer}>
-        <GridCanvas center={center} />
+        <Grid center={center} />
         <TrackCanvas center={center} />
-        <TrackIndicatorCanvas center={center} />
+        <Ship center={center} />
       </div>
     </div>
   );

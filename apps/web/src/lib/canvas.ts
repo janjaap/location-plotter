@@ -1,11 +1,10 @@
 import { type Coordinate } from 'socket/types';
 import type { FromTo } from '../types';
-import { gridCoordinate } from './gridCoordinate';
 
 export abstract class Canvas {
-  static DEFAULT_ZOOM_LEVEL = 1;
-  static MAX_VISIBLE_DEGREES_LAT = 3;
-  static MAX_VISIBLE_DEGREES_LONG = 3;
+  // static DEFAULT_ZOOM_LEVEL = 1;
+  // static MAX_VISIBLE_DEGREES_LAT = 3;
+  // static MAX_VISIBLE_DEGREES_LONG = 3;
 
   protected canvas: HTMLCanvasElement;
 
@@ -18,9 +17,11 @@ export abstract class Canvas {
    */
   protected center: Coordinate;
 
-  zoomLevel = Canvas.DEFAULT_ZOOM_LEVEL;
+  // zoomLevel = Canvas.DEFAULT_ZOOM_LEVEL;
 
-  subdivisions = this.zoomLevel;
+  // subdivisions = this.zoomLevel;
+
+  protected zoomFactor = 1;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     this.center = center;
@@ -36,16 +37,24 @@ export abstract class Canvas {
     this.context.textRendering = 'optimizeLegibility';
   }
 
-  get gridColumnWidth() {
-    return (
-      (this.canvas.width / Canvas.MAX_VISIBLE_DEGREES_LONG) * this.zoomLevel
-    );
+  // get gridColumnWidth() {
+  //   return (
+  //     (this.canvas.width / Canvas.MAX_VISIBLE_DEGREES_LONG) * this.zoomLevel
+  //   );
+  // }
+
+  // get gridRowHeight() {
+  //   return (
+  //     (this.canvas.height / Canvas.MAX_VISIBLE_DEGREES_LAT) * this.zoomLevel
+  //   );
+  // }
+
+  get zoom() {
+    return this.zoomFactor;
   }
 
-  get gridRowHeight() {
-    return (
-      (this.canvas.height / Canvas.MAX_VISIBLE_DEGREES_LAT) * this.zoomLevel
-    );
+  set zoom(zoomLevel: number) {
+    this.zoomFactor = 1 + (zoomLevel - 1) / 5;
   }
 
   centerContext() {
@@ -74,12 +83,7 @@ export abstract class Canvas {
     this.context.restore();
   }
 
-  drawCircle(
-    x: number,
-    y: number,
-    radius: number,
-    appearance: 'fill' | 'stroke',
-  ) {
+  drawCircle(x: number, y: number, radius: number, appearance: 'fill' | 'stroke') {
     this.context.beginPath();
     this.context.arc(x, y, radius, 0, Math.PI * 2);
     this.context.closePath();
@@ -108,13 +112,11 @@ export abstract class Canvas {
     this.context.stroke();
   }
 
-  getGridCoordinate = (point: Coordinate) =>
-    gridCoordinate(
-      point,
-      this.center,
-      this.gridColumnWidth,
-      this.gridRowHeight,
-    );
-
-  teardown() {}
+  // getGridCoordinate = (point: Coordinate) =>
+  //   gridCoordinate(
+  //     point,
+  //     this.center,
+  //     this.gridColumnWidth,
+  //     this.gridRowHeight,
+  //   );
 }

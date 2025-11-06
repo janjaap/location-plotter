@@ -33,7 +33,7 @@ export class CanvasGrid extends Observable {
   }
 
   private init = () => {
-    this.setObserver(this.redrawGrid);
+    this.resizeObserver(this.redrawGrid);
     this.redrawGrid();
 
     clientSocket.on(ServerEvents.RESET, this.reset);

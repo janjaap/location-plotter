@@ -15,7 +15,7 @@ export class Observable extends Canvas {
     this.initialCanvasHeight = canvas.clientHeight;
   }
 
-  protected setObserver(callback: () => void) {
+  protected resizeObserver(callback: () => void) {
     this.observer = new ResizeObserver(() => {
       if (
         this.canvas.clientWidth === this.initialCanvasWidth &&
@@ -24,14 +24,14 @@ export class Observable extends Canvas {
         return;
       }
 
+      console.log('resize', this.constructor.name);
       callback();
     });
+
     this.observer.observe(this.canvas);
   }
 
   teardown() {
-    super.teardown();
-
     this.observer?.disconnect();
   }
 }

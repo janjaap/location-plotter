@@ -18,6 +18,7 @@ html {
 main {
   display: grid;
   grid-template-columns: 250px auto;
+  height: 100%;
   width: 100%;
   gap: 1rem;
   padding: 1rem;

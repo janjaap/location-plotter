@@ -80,6 +80,7 @@ export const TrackCanvas = ({ center }: CanvasProps) => {
   // yOffset1: 768 - 768 * (10 / 10) = 0
 
   // zoomlevel: 11
+
   // xOffset1: 1024 - 1024 * (11 / 10) = -102.4
   // yOffset1: 768 - 768 * (11 / 10) = -76.8
 
@@ -94,9 +95,15 @@ export const TrackCanvas = ({ center }: CanvasProps) => {
   `;
 
   return (
-    <svg className={styles.trackCanvas} viewBox="0 0 1024 768">
+    <svg
+      className={styles.trackCanvas}
+      viewBox="0 0 1024 768">
       <g transform={`scale(${1 * (zoomLevel / 10)})`}>
-        <path d={svgPath} stroke="red" fill="transparent" />
+        <path
+          d={svgPath}
+          stroke="red"
+          fill="transparent"
+        />
       </g>
     </svg>
   );

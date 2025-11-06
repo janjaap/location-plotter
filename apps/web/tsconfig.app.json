@@ -6,8 +6,7 @@
     "lib": [
       "ES2022",
       "DOM",
-      "DOM.Iterable",
-      "webworker"
+      "DOM.Iterable"
     ],
     "module": "ESNext",
     "types": [

@@ -25,7 +25,7 @@ export class CanvasTrack extends Observable {
   }
 
   private init = () => {
-    this.setObserver(this.handleResize);
+    this.resizeObserver(this.handleResize);
 
     clientSocket.on(ServerEvents.POSITION, this.drawLeg);
     clientSocket.on(ServerEvents.RESET, this.clearCanvas);

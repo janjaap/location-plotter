@@ -67,7 +67,7 @@ export class CanvasTrackIndicator extends Observable {
   };
 
   private init = () => {
-    this.setObserver(() => {
+    this.resizeObserver(() => {
       if (!this.heading || !this.position) return;
 
       this.reset();

@@ -1,39 +1,50 @@
 import type { Coordinate } from 'socket/types';
 import type { FromTo } from '../types';
-import {
-  coordsToDmsFormatted,
-  ddToDms,
-  ddToDmsFormatted,
-} from '../utils/ddToDms';
+import { coordsToDmsFormatted, ddToDms, ddToDmsFormatted } from '../utils/ddToDms';
 import { dmsToDd } from '../utils/dmsToDd';
-import { Canvas } from './canvas';
 import { SECONDS_PER_MINUTE } from './gridCoordinate';
+import { Observable } from './Obserservable';
 import { gridLabelColor, gridLineColor, subgridLabelColor } from './tokens';
 
-export class Grid extends Canvas {
-  private gridPadding = 16;
+type DrawAxisSideParams = {
+  orientation: 'lat' | 'long';
+  baseOffset: number;
+  pixelsPerMinute: number;
+  subDivSize: number;
+  direction: 1 | -1;
+  getClosestMinute: (offset?: number) => number;
+  boundsStart: number;
+  boundsEnd: number;
+};
 
-  private gridLabelWidth = 80;
+type MakeLineCoordsParams = {
+  orientation: 'lat' | 'long';
+  pos: number;
+  start: number;
+  end: number;
+};
 
-  private gridDivisions = 2;
+export class Grid extends Observable {
+  private readonly gridPadding = 10;
 
-  private gridLimit = {
+  private readonly gridLabelWidth = 80;
+
+  private minuteDivisions = 2;
+
+  private maxGridSubdivWidth = 165;
+
+  private minGridSubdivWidth = 125;
+
+  private readonly gridLimit = {
     top: this.gridPadding,
     right: this.gridPadding,
-    bottom: 32, // prevent overlap with longitude labels
-    left: this.gridPadding + this.gridLabelWidth, // prevent overlap with latitude labels
-  };
-
-  private bounds = {
-    top: (this.canvas.height / 2 - this.gridLimit.top) * -1,
-    right: this.canvas.width / 2 - this.gridLimit.right,
-    bottom: this.canvas.height / 2 - this.gridLimit.bottom,
-    left: (this.canvas.width / 2 - this.gridLimit.left) * -1,
+    bottom: 2 * this.gridPadding, // prevent overlap with longitude labels
+    left: this.gridPadding, // prevent overlap with latitude labels
   };
 
   private visibleMinutes = 2;
 
-  private visibleSeconds = this.visibleMinutes * SECONDS_PER_MINUTE;
+  private readonly visibleSeconds = this.visibleMinutes * SECONDS_PER_MINUTE;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     super(center, canvas);
@@ -41,13 +52,43 @@ export class Grid extends Canvas {
     this.init();
   }
 
-  init() {
-    this.clearCanvas();
-    this.centerContext();
+  get bounds() {
+    return {
+      top: (this.canvasHeight / 2 - this.gridLimit.top) * -1,
+      right: this.canvasWidth / 2 - this.gridLimit.right,
+      bottom: this.canvasHeight / 2 - this.gridLimit.bottom,
+      left: (this.canvasWidth / 2 - this.gridLimit.left - this.gridLabelWidth) * -1,
+    };
+  }
+
+  get canvasHeight() {
+    return this.canvas.height;
+  }
+
+  get canvasWidth() {
+    return this.canvas.width;
+  }
+
+  get zoom() {
+    return super.zoom;
+  }
+
+  set zoom(zoomLevel: number) {
+    const currentFactor = super.zoom;
+    super.zoom = zoomLevel;
+
+    this.maxGridSubdivWidth = (this.maxGridSubdivWidth / currentFactor) * super.zoom;
+    this.minGridSubdivWidth = (this.minGridSubdivWidth / currentFactor) * super.zoom;
+
     this.drawGrid();
   }
 
-  closestMinute(decimalDegrees: number, offset?: number) {
+  private init() {
+    this.resizeObserver(this.drawGrid.bind(this));
+    this.drawGrid();
+  }
+
+  private closestMinute(decimalDegrees: number, offset?: number) {
     const dms = ddToDms(decimalDegrees);
     const result = { ...dms };
 
@@ -73,58 +114,200 @@ export class Grid extends Canvas {
     return dmsToDd(result);
   }
 
-  closestLongMinute() {
-    return this.closestMinute(this.center.long);
-  }
-
-  closestLongMinuteWithOffset(offset: number) {
+  private closestLongMinute = (offset?: number) => {
     return this.closestMinute(this.center.long, offset);
-  }
+  };
 
-  closestLatMinute() {
-    return this.closestMinute(this.center.lat);
-  }
-
-  closestLatMinuteWithOffset(offset: number) {
+  private closestLatMinute = (offset?: number) => {
     return this.closestMinute(this.center.lat, offset);
-  }
+  };
 
-  diffInSeconds(from: number, to: number) {
+  private diffInSeconds(from: number, to: number) {
     return (from - to) * 3600;
   }
 
-  drawCrosshair() {
-    this.drawInBackground(() => {
-      this.context.globalAlpha = 0.5;
-      this.context.strokeStyle = 'white';
-      this.context.lineWidth = 0.5;
-      this.context.lineDashOffset = 2;
-      this.context.setLineDash([4]);
+  private reset() {
+    this.clearCanvas();
+    this.centerContext();
+  }
 
-      this.drawLine({
-        from: { x: 0, y: -this.canvas.height / 4 },
-        to: { x: 0, y: this.canvas.height / 4 },
-      });
+  private determineMinuteDivisions(direction: 'lat' | 'long') {
+    const availableSpace =
+      direction === 'long'
+        ? (this.bounds.right - this.bounds.left) / 2
+        : (this.bounds.bottom - this.bounds.top) / 2;
+    const maxAmountSubDivs = Math.floor(availableSpace / this.maxGridSubdivWidth);
 
-      this.drawLine({
-        from: { x: -this.canvas.width / 4, y: 0 },
-        to: { x: this.canvas.width / 4, y: 0 },
-      });
+    this.minuteDivisions = maxAmountSubDivs;
+  }
+
+  private drawGrid = () => {
+    console.log('Drawing grid...');
+    this.reset();
+    this.drawLongitudeLines();
+    this.drawLatitudeLines();
+  };
+
+  private makeLineCoords({ orientation, pos, start, end }: MakeLineCoordsParams): FromTo {
+    return orientation === 'long'
+      ? { from: { x: pos, y: start }, to: { x: pos, y: end } }
+      : { from: { x: start, y: pos }, to: { x: end, y: pos } };
+  }
+
+  private drawAxisSide({
+    orientation,
+    baseOffset,
+    pixelsPerMinute,
+    subDivSize,
+    direction,
+    getClosestMinute,
+    boundsStart,
+    boundsEnd,
+  }: DrawAxisSideParams) {
+    const canvasLimit = orientation === 'lat' ? this.canvasHeight / 2 : this.canvasWidth / 2;
+    const maxDistance = direction === 1 ? canvasLimit - baseOffset : -canvasLimit - baseOffset;
+    let minuteOffset = direction;
+    let pos = baseOffset + direction * pixelsPerMinute;
+
+    // Main minute lines
+    while (
+      Math.abs(pos) < Math.abs(maxDistance) &&
+      this.fitsWithinBounds(orientation === 'long' ? pos : 0, orientation === 'lat' ? pos : 0)
+    ) {
+      this.drawGridLine(
+        this.makeLineCoords({
+          orientation,
+          pos,
+          start: boundsStart,
+          end: boundsEnd,
+        }),
+      );
+      this.drawGridLineLabel(
+        ddToDmsFormatted(getClosestMinute(minuteOffset)),
+        orientation === 'lat' ? this.bounds.left - this.gridLabelWidth : pos,
+        orientation === 'lat' ? pos : this.bounds.bottom + this.gridPadding,
+      );
+      pos += direction * pixelsPerMinute;
+      minuteOffset += direction;
+    }
+
+    // Subdivisions
+    pos = baseOffset + direction * subDivSize;
+    let subIndex = direction;
+    const { degrees, minutes } = ddToDms(getClosestMinute());
+    const secondsPerSubdivision = 60 / (this.minuteDivisions + 1);
+
+    while (
+      Math.abs(pos) < Math.abs(maxDistance) &&
+      this.fitsWithinBounds(orientation === 'long' ? pos : 0, orientation === 'lat' ? pos : 0)
+    ) {
+      this.drawGridSubdivisionLine(
+        this.makeLineCoords({
+          orientation,
+          pos,
+          start: boundsStart,
+          end: boundsEnd,
+        }),
+      );
+
+      const seconds =
+        direction === 1 ? secondsPerSubdivision * subIndex : 60 + secondsPerSubdivision * subIndex;
+
+      if (seconds > 0 && seconds < 60) {
+        const label = coordsToDmsFormatted({ degrees, minutes, seconds }, 0);
+        this.drawGridLineLabel(
+          label,
+          orientation === 'lat' ? this.bounds.left - this.gridLabelWidth : pos,
+          orientation === 'lat' ? pos : this.bounds.bottom + this.gridPadding,
+        );
+      }
+
+      pos += direction * subDivSize;
+      subIndex += direction;
+    }
+  }
+
+  private getPixelsPerSecond(axisSize: number) {
+    return (axisSize / this.visibleSeconds) * this.zoom;
+  }
+
+  private drawGridAxis({
+    orientation,
+    getClosestMinute,
+    axisSize,
+    boundsStart,
+    boundsEnd,
+    labelAlign,
+  }: {
+    orientation: 'lat' | 'long';
+    getClosestMinute: (offset?: number) => number;
+    axisSize: number;
+    boundsStart: number;
+    boundsEnd: number;
+    labelAlign: CanvasTextAlign;
+  }) {
+    this.determineMinuteDivisions(orientation);
+
+    const pixelsPerSecond = this.getPixelsPerSecond(axisSize);
+    const pixelsPerMinute = pixelsPerSecond * SECONDS_PER_MINUTE;
+    const subDivSize = this.getSubDivSize(pixelsPerSecond);
+
+    const closest = getClosestMinute();
+
+    // Distance from center to nearest minute line
+    const diff = this.diffInSeconds(closest, this.center[orientation]);
+    const baseOffset =
+      diff * pixelsPerSecond * (orientation === 'lat' ? Math.sign(closest - this.center.lat) : 1);
+
+    this.context.textAlign = labelAlign;
+
+    // Draw the main minute line
+    this.drawGridLine(
+      this.makeLineCoords({
+        orientation,
+        pos: baseOffset,
+        start: boundsStart,
+        end: boundsEnd,
+      }),
+    );
+
+    this.drawGridLineLabel(
+      ddToDmsFormatted(closest),
+      orientation === 'lat' ? this.bounds.left - this.gridLabelWidth : baseOffset,
+      orientation === 'lat' ? baseOffset : this.bounds.bottom + this.gridPadding,
+    );
+
+    // Draw outward in both directions
+    this.drawAxisSide({
+      orientation,
+      baseOffset,
+      pixelsPerMinute,
+      subDivSize,
+      direction: +1,
+      getClosestMinute,
+      boundsStart,
+      boundsEnd,
+    });
+
+    this.drawAxisSide({
+      orientation,
+      baseOffset,
+      pixelsPerMinute,
+      subDivSize,
+      direction: -1,
+      getClosestMinute,
+      boundsStart,
+      boundsEnd,
     });
   }
 
-  drawGrid() {
-    this.drawLongitudeLines();
-    this.drawLatitudeLines();
-    // this.drawCrosshair();
-  }
-
-  drawGridLine({ from, to }: FromTo) {
+  private drawGridLine({ from, to }: FromTo) {
     this.drawInBackground(() => {
       this.context.lineWidth = 1;
       this.context.strokeStyle = gridLineColor;
 
       if (from && to) {
+        // clear the area under the line to prevent visible overlapping lines
         this.context.clearRect(from?.x, from?.y - 1, to?.x - from?.x, 1);
       }
 
@@ -132,17 +315,11 @@ export class Grid extends Canvas {
     });
   }
 
-  drawGridLineLabel(text: string, x: number, y: number) {
+  private drawGridLineLabel(text: string, x: number, y: number) {
     this.drawLabel(text, x, y, gridLabelColor);
   }
 
-  drawSubgridLineLabel(text: string, x: number, y: number) {
-    this.context.globalAlpha = 0.7;
-    this.drawLabel(text, x, y, gridLabelColor);
-    this.context.globalAlpha = 1;
-  }
-
-  drawGridSubdivisionLine({ from, to }: FromTo) {
+  private drawGridSubdivisionLine({ from, to }: FromTo) {
     this.drawInBackground(() => {
       this.context.lineWidth = 0.5;
       this.context.strokeStyle = subgridLabelColor;
@@ -153,383 +330,46 @@ export class Grid extends Canvas {
     });
   }
 
-  drawLabel(text: string, x: number, y: number, fillStyle: string) {
+  private drawLabel(text: string, x: number, y: number, fillStyle: string) {
     this.draw(() => {
-      this.context.font = '12px system-ui';
+      this.context.font = '13px system-ui';
       this.context.textBaseline = 'middle';
       this.context.fillStyle = fillStyle;
-      this.context.fillText(
-        text,
-        Math.round(x),
-        Math.round(y),
-        this.gridLabelWidth,
-      );
+      this.context.fillText(text, Math.round(x), Math.round(y), this.gridLabelWidth);
     });
   }
 
-  drawLongitudeLines() {
-    // 1. determine amount of pixels per second
-    const pixelsPerSecond = this.canvas.width / this.visibleSeconds;
+  private getSubDivSize(pixelsPerSecond: number) {
     const pixelsPerMinute = pixelsPerSecond * SECONDS_PER_MINUTE;
+    const pixelsPerSubDivision = pixelsPerMinute / (this.minuteDivisions + 1);
+    const subDivWidth = Math.min(pixelsPerSubDivision, this.maxGridSubdivWidth);
 
-    // 2. find closest long minute (A)
-    const closest = this.closestLongMinute();
-
-    // 3. determine distance between center and A
-    const xOffset =
-      this.diffInSeconds(closest, this.center.long) * pixelsPerSecond;
-
-    // 4. draw A
-    this.drawGridLine({
-      from: { x: xOffset, y: -this.canvas.height / 2 + this.gridLimit.top },
-      to: { x: xOffset, y: this.canvas.height / 2 - this.gridLimit.bottom },
-    });
-
-    this.context.textAlign = 'center';
-
-    this.drawGridLineLabel(
-      ddToDmsFormatted(closest),
-      xOffset,
-      this.canvas.height / 2 - this.gridPadding,
-    );
-
-    // 5. determine distance from A to right of canvas
-    const distanceToRight = this.canvas.width / 2 - xOffset;
-
-    // 6. draw long minute lines to the right of A
-    let nextLongOffset = xOffset;
-    let longMinuteOffset = 0;
-    while (distanceToRight > nextLongOffset + pixelsPerMinute) {
-      nextLongOffset += pixelsPerMinute;
-      longMinuteOffset += 1;
-
-      if (!this.fitsWithinBounds(nextLongOffset, 0)) continue;
-
-      this.drawGridLine({
-        from: {
-          x: nextLongOffset,
-          y: -this.canvas.height / 2 + this.gridLimit.top,
-        },
-        to: {
-          x: nextLongOffset,
-          y: this.canvas.height / 2 - this.gridLimit.bottom,
-        },
-      });
-
-      this.drawGridLineLabel(
-        ddToDmsFormatted(this.closestLongMinuteWithOffset(longMinuteOffset)),
-        nextLongOffset,
-        this.canvas.height / 2 - this.gridPadding,
-      );
-    }
-
-    // 7. draw long subdivision lines to the right
-    nextLongOffset = xOffset;
-    longMinuteOffset = 0;
-    while (
-      distanceToRight >
-      nextLongOffset + pixelsPerMinute / (this.gridDivisions + 1)
-    ) {
-      nextLongOffset += pixelsPerMinute / (this.gridDivisions + 1);
-      longMinuteOffset += 1;
-
-      if (!this.fitsWithinBounds(nextLongOffset, 0)) continue;
-
-      this.drawGridSubdivisionLine({
-        from: {
-          x: nextLongOffset,
-          y: -this.canvas.height / 2 + this.gridLimit.top,
-        },
-        to: {
-          x: nextLongOffset,
-          y: this.canvas.height / 2 - this.gridLimit.bottom,
-        },
-      });
-
-      const { degrees, minutes } = ddToDms(closest);
-      const secondsPerSubdivision = 60 / (this.gridDivisions + 1);
-      const seconds = secondsPerSubdivision * longMinuteOffset;
-
-      if (seconds === 60 || seconds === 0) continue;
-
-      const label = coordsToDmsFormatted(
-        {
-          degrees,
-          minutes,
-          seconds,
-        },
-        0,
-      );
-
-      this.drawSubgridLineLabel(
-        label,
-        nextLongOffset,
-        this.canvas.height / 2 - this.gridPadding,
-      );
-    }
-
-    // 8. determine distance from A to left side of canvas
-    const distanceToLeft = (this.canvas.width - distanceToRight) * -1;
-
-    // 9. draw long minute lines to the left of A
-    let prevLongOffset = xOffset;
-    longMinuteOffset = 0;
-    while (distanceToLeft < prevLongOffset - pixelsPerMinute) {
-      prevLongOffset -= pixelsPerMinute;
-      longMinuteOffset -= 1;
-
-      if (!this.fitsWithinBounds(prevLongOffset, 0)) continue;
-
-      console.log({ prevLongOffset });
-
-      this.drawGridLine({
-        from: {
-          x: prevLongOffset,
-          y: -this.canvas.height / 2 + this.gridLimit.top,
-        },
-        to: {
-          x: prevLongOffset,
-          y: this.canvas.height / 2 - this.gridLimit.bottom,
-        },
-      });
-
-      this.drawGridLineLabel(
-        ddToDmsFormatted(this.closestLongMinuteWithOffset(longMinuteOffset)),
-        prevLongOffset,
-        this.canvas.height / 2 - this.gridPadding,
-      );
-    }
-
-    // 10. draw long subdivision lines to the left
-    prevLongOffset = xOffset;
-    longMinuteOffset = 0;
-    while (
-      distanceToLeft <
-      prevLongOffset - pixelsPerMinute / (this.gridDivisions + 1)
-    ) {
-      prevLongOffset -= pixelsPerMinute / (this.gridDivisions + 1);
-      longMinuteOffset -= 1;
-
-      if (!this.fitsWithinBounds(prevLongOffset, 0)) continue;
-
-      this.drawGridSubdivisionLine({
-        from: {
-          x: prevLongOffset,
-          y: -this.canvas.height / 2 + this.gridLimit.top,
-        },
-        to: {
-          x: prevLongOffset,
-          y: this.canvas.height / 2 - this.gridLimit.bottom,
-        },
-      });
-
-      const { degrees, minutes } = ddToDms(closest);
-      const seconds = 60 + (60 / (this.gridDivisions + 1)) * longMinuteOffset;
-
-      if (seconds === 60 || seconds === 0) continue;
-
-      const label = coordsToDmsFormatted(
-        {
-          degrees,
-          minutes: minutes - 1,
-          seconds,
-        },
-        0,
-      );
-
-      this.drawSubgridLineLabel(
-        label,
-        prevLongOffset,
-        this.canvas.height / 2 - this.gridPadding,
-      );
-    }
+    return Math.max(subDivWidth, this.minGridSubdivWidth);
   }
 
-  drawLatitudeLines() {
-    // 1. determine amount of pixels per second
-    const pixelsPerSecond = this.canvas.height / this.visibleSeconds;
-    const pixelsPerMinute = pixelsPerSecond * SECONDS_PER_MINUTE;
-
-    // 2. find closest lat minute B
-    const closest = this.closestLatMinute();
-
-    // 3. determine distance between center and B
-    const sign = Math.sign(closest - this.center.lat);
-    const yOffset =
-      this.diffInSeconds(closest, this.center.lat) * pixelsPerSecond * sign;
-
-    this.context.textAlign = 'start';
-
-    // 4. draw B
-    this.drawGridLine({
-      from: {
-        x: -this.canvas.width / 2 + this.gridLimit.left + this.gridPadding,
-        y: yOffset,
-      },
-      to: { x: this.canvas.width / 2 - this.gridLimit.right, y: yOffset },
+  private drawLongitudeLines() {
+    this.drawGridAxis({
+      orientation: 'long',
+      getClosestMinute: this.closestLongMinute,
+      axisSize: this.canvasWidth,
+      boundsStart: this.bounds.top,
+      boundsEnd: this.bounds.bottom,
+      labelAlign: 'center',
     });
-
-    this.drawGridLineLabel(
-      ddToDmsFormatted(closest),
-      -this.canvas.width / 2 + this.gridPadding,
-      yOffset,
-    );
-
-    // 5. determine distance from B to top of canvas
-    const distanceToTop = -this.canvas.height / 2 - yOffset;
-
-    // 6. draw lat subdivion lines to the top
-    let prevLatOffset = yOffset;
-    let latMinutesOffset = 0;
-    while (
-      distanceToTop <
-      prevLatOffset - pixelsPerMinute / (this.gridDivisions + 1)
-    ) {
-      prevLatOffset -= pixelsPerMinute / (this.gridDivisions + 1);
-      latMinutesOffset -= 1;
-
-      if (!this.fitsWithinBounds(0, prevLatOffset)) continue;
-
-      this.drawGridSubdivisionLine({
-        from: {
-          x: -this.canvas.width / 2 + this.gridLimit.left + this.gridPadding,
-          y: prevLatOffset,
-        },
-        to: {
-          x: this.canvas.width / 2 - this.gridLimit.right,
-          y: prevLatOffset,
-        },
-      });
-
-      const { degrees, minutes } = ddToDms(closest);
-
-      const secondsPerSubdivision = 60 / (this.gridDivisions + 1);
-      const subdivisionOffsetSeconds = secondsPerSubdivision * latMinutesOffset;
-      const seconds = 60 - (60 + subdivisionOffsetSeconds);
-
-      if (seconds === 60 || seconds === 0) continue;
-
-      const label = coordsToDmsFormatted(
-        {
-          degrees,
-          minutes,
-          seconds,
-        },
-        0,
-      );
-
-      this.drawSubgridLineLabel(
-        label,
-        -this.canvas.width / 2 + this.gridPadding,
-        prevLatOffset,
-      );
-    }
-
-    // 7. draw lat minute lines to the top of B
-    prevLatOffset = yOffset;
-    latMinutesOffset = 0;
-    while (distanceToTop < prevLatOffset - pixelsPerMinute) {
-      prevLatOffset -= pixelsPerMinute;
-      latMinutesOffset -= 1;
-
-      if (!this.fitsWithinBounds(0, prevLatOffset)) continue;
-
-      this.drawGridLine({
-        from: {
-          x: -this.canvas.width / 2 + this.gridLimit.left + this.gridPadding,
-          y: prevLatOffset,
-        },
-        to: {
-          x: this.canvas.width / 2 - this.gridLimit.right,
-          y: prevLatOffset,
-        },
-      });
-
-      this.drawGridLineLabel(
-        ddToDmsFormatted(this.closestLatMinuteWithOffset(latMinutesOffset)),
-        -this.canvas.width / 2 + this.gridPadding,
-        prevLatOffset,
-      );
-    }
-
-    // 8. determine distance from B to bottom of canvas
-    const distanceToBottom = this.canvas.height - distanceToTop * -1;
-
-    // 9. draw lat minute lines to the bottom of B
-    prevLatOffset = yOffset;
-    latMinutesOffset = 0;
-    while (
-      distanceToBottom >
-      prevLatOffset + pixelsPerMinute / (this.gridDivisions + 1)
-    ) {
-      prevLatOffset += pixelsPerMinute / (this.gridDivisions + 1);
-      latMinutesOffset -= 1;
-
-      if (!this.fitsWithinBounds(0, prevLatOffset)) continue;
-
-      this.drawGridSubdivisionLine({
-        from: {
-          x: -this.canvas.width / 2 + this.gridLimit.left + this.gridPadding,
-          y: prevLatOffset,
-        },
-        to: {
-          x: this.canvas.width / 2 - this.gridLimit.right,
-          y: prevLatOffset,
-        },
-      });
-
-      const { degrees, minutes } = ddToDms(closest);
-      const secondsPerSubdivision = 60 / (this.gridDivisions + 1);
-      const subdivisionOffsetSeconds = secondsPerSubdivision * latMinutesOffset;
-      const seconds = 60 + subdivisionOffsetSeconds;
-
-      if (seconds === 60 || seconds === 0) continue;
-
-      const label = coordsToDmsFormatted(
-        {
-          degrees,
-          minutes,
-          seconds,
-        },
-        0,
-      );
-
-      this.drawSubgridLineLabel(
-        label,
-        -this.canvas.width / 2 + this.gridPadding,
-        prevLatOffset,
-      );
-    }
-
-    // 10. draw lat minute lines to the bottom of B
-    prevLatOffset = yOffset;
-    latMinutesOffset = 0;
-    while (distanceToBottom > prevLatOffset + pixelsPerMinute) {
-      prevLatOffset += pixelsPerMinute;
-      latMinutesOffset += 1;
-
-      if (!this.fitsWithinBounds(0, prevLatOffset)) continue;
-
-      this.drawGridLine({
-        from: {
-          x: -this.canvas.width / 2 + this.gridLimit.left + this.gridPadding,
-          y: prevLatOffset,
-        },
-        to: {
-          x: this.canvas.width / 2 - this.gridLimit.right,
-          y: prevLatOffset,
-        },
-      });
-
-      this.drawGridLineLabel(
-        ddToDmsFormatted(this.closestLatMinuteWithOffset(latMinutesOffset)),
-        -this.canvas.width / 2 + this.gridPadding,
-        prevLatOffset,
-      );
-    }
   }
 
-  fitsWithinBounds(x: number, y: number) {
+  private drawLatitudeLines() {
+    this.drawGridAxis({
+      orientation: 'lat',
+      getClosestMinute: this.closestLatMinute,
+      axisSize: this.canvasHeight,
+      boundsStart: this.bounds.left,
+      boundsEnd: this.bounds.right,
+      labelAlign: 'start',
+    });
+  }
+
+  private fitsWithinBounds(x: number, y: number) {
     return (
       x >= this.bounds.left &&
       x <= this.bounds.right &&
