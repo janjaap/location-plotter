@@ -3,7 +3,7 @@ import type { DMS } from 'socket/types';
 const zeroPad = (num: number, places = 3) => String(num).padStart(places, '0');
 
 const normalizeValues = ({ degrees, minutes, seconds }: DMS): DMS => {
-  if (seconds >= 60 || seconds < 0.0001 || Math.abs(seconds - 60) < 0.0001) {
+  if (seconds >= 60) {
     seconds = 0;
     minutes += 1;
   }
@@ -11,6 +11,10 @@ const normalizeValues = ({ degrees, minutes, seconds }: DMS): DMS => {
   if (minutes >= 60) {
     minutes = 0;
     degrees += 1;
+  }
+
+  if (seconds < 0.0001 || Math.abs(seconds - 60) < 0.0001) {
+    seconds = 0;
   }
 
   return { degrees, minutes, seconds };

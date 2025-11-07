@@ -57,6 +57,11 @@ export abstract class Canvas {
     this.zoomFactor = 1 + (zoomLevel - 1) / 5;
   }
 
+  protected reset() {
+    this.clearCanvas();
+    this.centerContext();
+  }
+
   centerContext() {
     this.canvas.width = this.canvas.clientWidth;
     this.canvas.height = this.canvas.clientHeight;

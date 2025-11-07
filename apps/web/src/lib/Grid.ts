@@ -4,7 +4,7 @@ import { coordsToDmsFormatted, ddToDms, ddToDmsFormatted } from '../utils/ddToDm
 import { dmsToDd } from '../utils/dmsToDd';
 import { SECONDS_PER_MINUTE } from './gridCoordinate';
 import { Observable } from './Obserservable';
-import { gridLabelColor, gridLineColor, subgridLabelColor } from './tokens';
+import { centerMarkerColor, gridLabelColor, gridLineColor, subgridLabelColor } from './tokens';
 
 type DrawAxisSideParams = {
   orientation: 'lat' | 'long';
@@ -25,15 +25,13 @@ type MakeLineCoordsParams = {
 };
 
 export class Grid extends Observable {
-  private readonly gridPadding = 10;
+  private minuteDivisions = 2;
+
+  private visibleMinutes = 2;
 
   private readonly gridLabelWidth = 80;
 
-  private minuteDivisions = 2;
-
-  private maxGridSubdivWidth = 165;
-
-  private minGridSubdivWidth = 125;
+  private readonly gridPadding = 10;
 
   private readonly gridLimit = {
     top: this.gridPadding,
@@ -41,8 +39,6 @@ export class Grid extends Observable {
     bottom: 2 * this.gridPadding, // prevent overlap with longitude labels
     left: this.gridPadding, // prevent overlap with latitude labels
   };
-
-  private visibleMinutes = 2;
 
   private readonly visibleSeconds = this.visibleMinutes * SECONDS_PER_MINUTE;
 
@@ -74,17 +70,13 @@ export class Grid extends Observable {
   }
 
   set zoom(zoomLevel: number) {
-    const currentFactor = super.zoom;
     super.zoom = zoomLevel;
-
-    this.maxGridSubdivWidth = (this.maxGridSubdivWidth / currentFactor) * super.zoom;
-    this.minGridSubdivWidth = (this.minGridSubdivWidth / currentFactor) * super.zoom;
 
     this.drawGrid();
   }
 
   private init() {
-    this.resizeObserver(this.drawGrid.bind(this));
+    this.resizeObserver(this.drawGrid);
     this.drawGrid();
   }
 
@@ -126,27 +118,19 @@ export class Grid extends Observable {
     return (from - to) * 3600;
   }
 
-  private reset() {
-    this.clearCanvas();
-    this.centerContext();
-  }
-
-  private determineMinuteDivisions(direction: 'lat' | 'long') {
-    const availableSpace =
-      direction === 'long'
-        ? (this.bounds.right - this.bounds.left) / 2
-        : (this.bounds.bottom - this.bounds.top) / 2;
-    const maxAmountSubDivs = Math.floor(availableSpace / this.maxGridSubdivWidth);
-
-    this.minuteDivisions = maxAmountSubDivs;
-  }
-
   private drawGrid = () => {
-    console.log('Drawing grid...');
     this.reset();
+    this.drawCenterMarker();
     this.drawLongitudeLines();
     this.drawLatitudeLines();
   };
+
+  private drawCenterMarker() {
+    this.draw(() => {
+      this.context.fillStyle = centerMarkerColor;
+      this.drawCircle(0, 0, 3, 'fill');
+    });
+  }
 
   private makeLineCoords({ orientation, pos, start, end }: MakeLineCoordsParams): FromTo {
     return orientation === 'long'
@@ -166,7 +150,7 @@ export class Grid extends Observable {
   }: DrawAxisSideParams) {
     const canvasLimit = orientation === 'lat' ? this.canvasHeight / 2 : this.canvasWidth / 2;
     const maxDistance = direction === 1 ? canvasLimit - baseOffset : -canvasLimit - baseOffset;
-    let minuteOffset = direction;
+    let minuteOffset = -direction;
     let pos = baseOffset + direction * pixelsPerMinute;
 
     // Main minute lines
@@ -195,7 +179,7 @@ export class Grid extends Observable {
     pos = baseOffset + direction * subDivSize;
     let subIndex = direction;
     const { degrees, minutes } = ddToDms(getClosestMinute());
-    const secondsPerSubdivision = 60 / (this.minuteDivisions + 1);
+    const secondsPerSubdivision = SECONDS_PER_MINUTE / (this.minuteDivisions + 1);
 
     while (
       Math.abs(pos) < Math.abs(maxDistance) &&
@@ -211,9 +195,11 @@ export class Grid extends Observable {
       );
 
       const seconds =
-        direction === 1 ? secondsPerSubdivision * subIndex : 60 + secondsPerSubdivision * subIndex;
+        direction === 1
+          ? SECONDS_PER_MINUTE - secondsPerSubdivision * subIndex
+          : SECONDS_PER_MINUTE - (SECONDS_PER_MINUTE + secondsPerSubdivision * subIndex);
 
-      if (seconds > 0 && seconds < 60) {
+      if (seconds > 0 && seconds < SECONDS_PER_MINUTE) {
         const label = coordsToDmsFormatted({ degrees, minutes, seconds }, 0);
         this.drawGridLineLabel(
           label,
@@ -246,11 +232,9 @@ export class Grid extends Observable {
     boundsEnd: number;
     labelAlign: CanvasTextAlign;
   }) {
-    this.determineMinuteDivisions(orientation);
-
     const pixelsPerSecond = this.getPixelsPerSecond(axisSize);
     const pixelsPerMinute = pixelsPerSecond * SECONDS_PER_MINUTE;
-    const subDivSize = this.getSubDivSize(pixelsPerSecond);
+    const subDivSize = pixelsPerMinute / (this.minuteDivisions + 1);
 
     const closest = getClosestMinute();
 
@@ -339,19 +323,11 @@ export class Grid extends Observable {
     });
   }
 
-  private getSubDivSize(pixelsPerSecond: number) {
-    const pixelsPerMinute = pixelsPerSecond * SECONDS_PER_MINUTE;
-    const pixelsPerSubDivision = pixelsPerMinute / (this.minuteDivisions + 1);
-    const subDivWidth = Math.min(pixelsPerSubDivision, this.maxGridSubdivWidth);
-
-    return Math.max(subDivWidth, this.minGridSubdivWidth);
-  }
-
   private drawLongitudeLines() {
     this.drawGridAxis({
       orientation: 'long',
       getClosestMinute: this.closestLongMinute,
-      axisSize: this.canvasWidth,
+      axisSize: this.bounds.right - this.bounds.left,
       boundsStart: this.bounds.top,
       boundsEnd: this.bounds.bottom,
       labelAlign: 'center',
@@ -362,7 +338,7 @@ export class Grid extends Observable {
     this.drawGridAxis({
       orientation: 'lat',
       getClosestMinute: this.closestLatMinute,
-      axisSize: this.canvasHeight,
+      axisSize: this.bounds.bottom - this.bounds.top,
       boundsStart: this.bounds.left,
       boundsEnd: this.bounds.right,
       labelAlign: 'start',

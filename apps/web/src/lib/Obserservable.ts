@@ -24,7 +24,6 @@ export class Observable extends Canvas {
         return;
       }
 
-      console.log('resize', this.constructor.name);
       callback();
     });
 
@@ -32,6 +31,6 @@ export class Observable extends Canvas {
   }
 
   teardown() {
-    this.observer?.disconnect();
+    // this.observer?.disconnect();
   }
 }
