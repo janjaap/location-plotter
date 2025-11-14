@@ -1,12 +1,63 @@
-.paramsForm {
+form {
   display: flex;
   gap: 1rem;
   flex-direction: column;
 }
 
-.inlineLabel {
-  align-items: center;
-  justify-content: space-between;
-  display: inline-flex;
-  width: 100%;
+label {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+input {
+  flex: 1;
+  padding: 0.5em;
+}
+
+[type='submit'] {
+  flex: 1 0 auto;
+}
+
+button {
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+
+  &.small {
+    padding: 0.4em 0.8em;
+    font-size: 0.9em;
+    border-radius: 0.25rem;
+  }
+}
+
+button:not(:disabled):hover {
+  border-color: #646cff;
+}
+
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+
+  a:hover {
+    color: #747bff;
+  }
+
+  button {
+    background-color: #f9f9f9;
+  }
 }

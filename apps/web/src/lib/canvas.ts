@@ -1,27 +1,30 @@
 import { type Coordinate } from 'socket/types';
-import type { FromTo } from '../types';
+import type { CanvasBounds, FromTo } from '../types';
+import { SECONDS_PER_MINUTE } from '../utils/constants';
+
+export const zoomLevelToFactor = (zoomLevel: number) => 1 + (zoomLevel - 1) / 2;
+export const zoomFactorToLevel = (zoomFactor: number) => 1 + (zoomFactor - 1) * 2;
 
 export abstract class Canvas {
-  // static DEFAULT_ZOOM_LEVEL = 1;
-  // static MAX_VISIBLE_DEGREES_LAT = 3;
-  // static MAX_VISIBLE_DEGREES_LONG = 3;
+  static CANVAS_PADDING = 10;
+
+  static LABEL_HEIGHT = 20;
+
+  static LABEL_WIDTH = 80;
+
+  static VISIBLE_MINUTES = 3;
+
+  static VISIBLE_SECONDS = Canvas.VISIBLE_MINUTES * SECONDS_PER_MINUTE;
+
+  private zoomFactor = 1;
 
   protected canvas: HTMLCanvasElement;
 
-  protected context!: CanvasRenderingContext2D;
-
-  // protected zoomLevel = Canvas.DEFAULT_ZOOM_LEVEL;
-
-  /**
-   * Starting location and center of the geographical area
-   */
   protected center: Coordinate;
 
-  // zoomLevel = Canvas.DEFAULT_ZOOM_LEVEL;
+  protected context!: CanvasRenderingContext2D;
 
-  // subdivisions = this.zoomLevel;
-
-  protected zoomFactor = 1;
+  protected minuteDivisions = 1;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     this.center = center;
@@ -37,24 +40,42 @@ export abstract class Canvas {
     this.context.textRendering = 'optimizeLegibility';
   }
 
-  // get gridColumnWidth() {
-  //   return (
-  //     (this.canvas.width / Canvas.MAX_VISIBLE_DEGREES_LONG) * this.zoomLevel
-  //   );
-  // }
+  get canvasHeight() {
+    return this.canvas.height;
+  }
 
-  // get gridRowHeight() {
-  //   return (
-  //     (this.canvas.height / Canvas.MAX_VISIBLE_DEGREES_LAT) * this.zoomLevel
-  //   );
-  // }
+  get canvasWidth() {
+    return this.canvas.width;
+  }
+
+  get bounds(): CanvasBounds {
+    return {
+      top: (this.canvasHeight / 2 - Canvas.CANVAS_PADDING) * -1,
+      right: this.canvasWidth / 2 - Canvas.CANVAS_PADDING,
+      bottom: this.canvasHeight / 2 - Canvas.LABEL_HEIGHT,
+      left: (this.canvasWidth / 2 - Canvas.CANVAS_PADDING - Canvas.LABEL_WIDTH) * -1,
+    };
+  }
 
   get zoom() {
     return this.zoomFactor;
   }
 
   set zoom(zoomLevel: number) {
-    this.zoomFactor = 1 + (zoomLevel - 1) / 5;
+    this.zoomFactor = zoomLevelToFactor(zoomLevel);
+    this.minuteDivisions = zoomLevel;
+  }
+
+  get pixelsPerLongSecond() {
+    return this.getPixelsPerSecond(this.bounds.right - this.bounds.left, Canvas.VISIBLE_SECONDS);
+  }
+
+  get pixelsPerLatSecond() {
+    return this.getPixelsPerSecond(this.bounds.bottom - this.bounds.top, Canvas.VISIBLE_SECONDS);
+  }
+
+  private getPixelsPerSecond(pixels: number, seconds: number) {
+    return (pixels / seconds) * this.zoom;
   }
 
   protected reset() {
@@ -62,14 +83,14 @@ export abstract class Canvas {
     this.centerContext();
   }
 
-  centerContext() {
+  private centerContext() {
     this.canvas.width = this.canvas.clientWidth;
     this.canvas.height = this.canvas.clientHeight;
 
     this.context.translate(this.canvas.width / 2, this.canvas.height / 2);
   }
 
-  clearCanvas() {
+  private clearCanvas() {
     this.context.rotate(0);
     this.context.beginPath();
     this.context.clearRect(
@@ -117,11 +138,5 @@ export abstract class Canvas {
     this.context.stroke();
   }
 
-  // getGridCoordinate = (point: Coordinate) =>
-  //   gridCoordinate(
-  //     point,
-  //     this.center,
-  //     this.gridColumnWidth,
-  //     this.gridRowHeight,
-  //   );
+  teardown() {}
 }

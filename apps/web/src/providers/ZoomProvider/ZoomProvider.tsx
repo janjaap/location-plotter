@@ -1,25 +1,28 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  type PropsWithChildren,
-} from 'react';
+import { createContext, useContext, useState, type PropsWithChildren } from 'react';
 
 type ZoomLevelContext = {
   zoomLevel: number;
   updateZoomLevel: (value: number) => void;
+  resetZoomLevel: () => void;
 };
 
-const ZoomContext = createContext<ZoomLevelContext>({
-  zoomLevel: 1,
+const defaultContext: ZoomLevelContext = {
+  zoomLevel: 10,
   updateZoomLevel: () => {},
-});
+  resetZoomLevel: () => {},
+};
+
+const ZoomContext = createContext<ZoomLevelContext>(defaultContext);
 
 export const ZoomProvider = ({ children }: PropsWithChildren) => {
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(defaultContext.zoomLevel);
 
   const updateZoomLevel = (value: number) => {
     setZoomLevel(value);
+  };
+
+  const resetZoomLevel = () => {
+    setZoomLevel(defaultContext.zoomLevel);
   };
 
   return (
@@ -27,8 +30,8 @@ export const ZoomProvider = ({ children }: PropsWithChildren) => {
       value={{
         zoomLevel,
         updateZoomLevel,
-      }}
-    >
+        resetZoomLevel,
+      }}>
       {children}
     </ZoomContext.Provider>
   );

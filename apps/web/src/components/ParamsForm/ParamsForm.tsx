@@ -1,25 +1,20 @@
-import {
-  useActionState,
-  useEffect,
-  useState,
-  type ChangeEvent,
-  type MouseEvent,
-} from 'react';
+import { useActionState, useEffect, useState, type ChangeEvent, type MouseEvent } from 'react';
 import {
   ClientEvents,
   ServerEvents,
   type PositionPayload,
   type StartPositionPayload,
 } from 'socket/types';
-import { Canvas } from '../../lib/canvas';
 import { clientSocket } from '../../lib/clientSocket';
 import { useZoom } from '../../providers/ZoomProvider/ZoomProvider';
 import { ddToDmsFormatted } from '../../utils/ddToDms';
 import styles from './ParamsForm.module.css';
 
 const startPosition: StartPositionPayload = {
-  lat: 52.95138889,
-  long: 4.79861045693137,
+  position: {
+    lat: 52.95138889,
+    long: 4.79861045693137,
+  },
 
   // middle of minutes
   // lat: 52.95833333,
@@ -38,16 +33,12 @@ const initialPositionState = {
 export const ParamsForm = () => {
   const [isTracking, setIsTracking] = useState(false);
   const [formState, setFormState] = useState(initialPositionState);
-  const { zoomLevel, updateZoomLevel } = useZoom();
+  const { zoomLevel, updateZoomLevel, resetZoomLevel } = useZoom();
 
   useEffect(() => {
     clientSocket.emit(ClientEvents.INIT, initialPositionState);
 
-    const updatePosition = ({
-      position,
-      distance,
-      heading,
-    }: PositionPayload) => {
+    const updatePosition = ({ position, distance, heading }: PositionPayload) => {
       const { lat, long } = position;
 
       updateStateValue('lat', lat);
@@ -57,7 +48,7 @@ export const ParamsForm = () => {
     };
 
     const reset = () => {
-      updateZoomLevel(Canvas.DEFAULT_ZOOM_LEVEL);
+      resetZoomLevel();
     };
 
     clientSocket.on(ServerEvents.POSITION, updatePosition);
@@ -67,7 +58,7 @@ export const ParamsForm = () => {
       clientSocket.off(ServerEvents.POSITION, updatePosition);
       clientSocket.off(ServerEvents.RESET, reset);
     };
-  }, [updateZoomLevel]);
+  }, [resetZoomLevel, updateZoomLevel]);
 
   const [, submitAction] = useActionState(
     (_previousState: null, formData: Iterable<[PropertyKey, unknown]>) => {
@@ -77,7 +68,8 @@ export const ParamsForm = () => {
       const speed = Number(entries.speed);
       const heading = Number(entries.heading);
 
-      clientSocket.emit(ClientEvents.START, { lat, long, speed, heading });
+      const position = { lat, long };
+      clientSocket.emit(ClientEvents.START, { position, speed, heading });
       setIsTracking(true);
 
       return null;
@@ -152,9 +144,9 @@ export const ParamsForm = () => {
             onChange={handleChange}
             step="0.000001"
             type="number"
-            value={formState.lat}
+            value={formState.position.lat}
           />
-          <small>{ddToDmsFormatted(formState.lat)}</small>
+          <small>{ddToDmsFormatted(formState.position.lat)}</small>
         </label>
 
         <label>
@@ -165,9 +157,9 @@ export const ParamsForm = () => {
             onChange={handleChange}
             step="0.0000001"
             type="number"
-            value={formState.long}
+            value={formState.position.long}
           />
-          <small>{ddToDmsFormatted(formState.long)}</small>
+          <small>{ddToDmsFormatted(formState.position.long)}</small>
         </label>
 
         <label>
@@ -194,11 +186,15 @@ export const ParamsForm = () => {
           />
         </label>
 
-        <button type="submit" disabled={isTracking}>
+        <button
+          type="submit"
+          disabled={isTracking}>
           Start MOB
         </button>
 
-        <button disabled={!isTracking} onClick={stopTracking}>
+        <button
+          disabled={!isTracking}
+          onClick={stopTracking}>
           Stop
         </button>
 
@@ -217,9 +213,8 @@ export const ParamsForm = () => {
             value={zoomLevel}
           />
         </label>
+        <div>Distance: {formState.distance.toFixed(0)} meters</div>
       </form>
-
-      <div>Distance: {formState.distance.toFixed(0)} meters</div>
     </div>
   );
 };

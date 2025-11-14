@@ -6,6 +6,7 @@ export enum ServerEvents {
   POSITION = 'position',
   RESET = 'reset',
   STOPPED = 'stopped',
+  ZOOM = 'zoom',
 }
 
 export enum ClientEvents {
@@ -21,8 +22,7 @@ export enum ClientEvents {
 
 export type Coordinate = { lat: number; long: number };
 export type StartPositionPayload = {
-  lat: number;
-  long: number;
+  position: Coordinate;
   speed: number;
   heading: number;
 };
@@ -36,10 +36,11 @@ export interface ServerToClientEvents {
   [ServerEvents.CONNECTED]: () => void;
   [ServerEvents.DISCONNECTED]: () => void;
   [ServerEvents.MARKER]: (marker: Coordinate) => void;
-  [ServerEvents.INIT]: (payload: PositionPayload) => void;
+  [ServerEvents.INIT]: (payload: StartPositionPayload) => void;
   [ServerEvents.POSITION]: (payload: PositionPayload) => void;
   [ServerEvents.RESET]: (payload: StartPositionPayload) => void;
   [ServerEvents.STOPPED]: () => void;
+  [ServerEvents.ZOOM]: (zoomLevel: number) => void;
 }
 
 export interface ClientToServerEvents {

@@ -20,12 +20,11 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   },
 });
 
-const POSITION_UPDATE_INTERVAL = 100; // ms
+const POSITION_UPDATE_INTERVAL = 1_000; // ms
 const MAX_BEARING = 120; // degrees
 
 function applyRandomBearing(heading: number) {
-  const bearing =
-    Math.floor(Math.random() * (MAX_BEARING * 2 + 1)) - MAX_BEARING;
+  const bearing = Math.floor(Math.random() * (MAX_BEARING * 2 + 1)) - MAX_BEARING;
   let newHeading = heading + bearing;
 
   if (newHeading < 0) {
@@ -37,105 +36,107 @@ function applyRandomBearing(heading: number) {
   return Math.round(newHeading);
 }
 
-io.on(
-  'connection',
-  (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {
-    let initialPosition: StartPositionPayload;
-    let currentPosition: Coordinate;
-    let currentHeading: number;
-    let positionInterval: NodeJS.Timeout;
-    let headingInterval: NodeJS.Timeout;
+let positionInterval: NodeJS.Timeout;
+let headingInterval: NodeJS.Timeout;
 
-    sockets.add(socket);
+io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {
+  let initialPosition: StartPositionPayload;
+  let currentPosition: Coordinate;
+  let currentHeading: number;
 
-    socket.emit(ServerEvents.CONNECTED);
+  sockets.add(socket);
 
-    socket
-      .on(ClientEvents.INIT, (startPosition) => {
-        const { lat, long, heading } = startPosition;
-        initialPosition = startPosition;
+  socket.emit(ServerEvents.CONNECTED);
 
-        socket.emit(ServerEvents.INIT, {
-          position: { lat, long },
-          distance: 0,
-          heading,
-        });
-      })
+  const cleanup = () => {
+    clearInterval(positionInterval);
+    clearInterval(headingInterval);
+  };
 
-      .on(ClientEvents.START, (startPosition) => {
-        socket.emit(ServerEvents.MARKER, startPosition);
+  socket
+    .on(ClientEvents.INIT, (startPosition) => {
+      const { position, heading, speed } = startPosition;
+      initialPosition = startPosition;
 
-        const { lat, long, speed, heading } = startPosition;
-        currentHeading = Number(heading);
-        currentPosition = { lat, long };
+      socket.emit(ServerEvents.INIT, {
+        position,
+        heading,
+        speed,
+      });
+    })
 
-        const generateNewHeading = () => {
-          currentHeading = applyRandomBearing(currentHeading);
+    .on(ClientEvents.START, (startPosition) => {
+      const { position, speed, heading } = startPosition;
+      currentHeading = Number(heading);
+      currentPosition = position;
 
-          clearInterval(headingInterval);
-          headingInterval = setInterval(
-            generateNewHeading,
-            Math.random() * 5_000,
-          );
-        };
+      const generateNewHeading = () => {
+        currentHeading = applyRandomBearing(currentHeading);
 
-        generateNewHeading();
+        clearInterval(headingInterval);
+        headingInterval = setInterval(generateNewHeading, Math.random() * 5_000);
+      };
 
-        const emitNewHeading = () => {
-          const newPosition = updatePosition(
-            currentPosition.lat,
-            currentPosition.long,
-            speed,
-            currentHeading,
-            POSITION_UPDATE_INTERVAL / 1_000,
-          );
-          const distance = getDistance({ lat, long }, newPosition);
+      generateNewHeading();
 
-          socket.emit(ServerEvents.POSITION, {
-            position: newPosition,
-            distance,
-            heading: currentHeading,
-          });
-
-          currentPosition = newPosition;
-        };
+      const emitNewHeading = () => {
+        const newPosition = updatePosition(
+          currentPosition.lat,
+          currentPosition.long,
+          speed,
+          currentHeading,
+          POSITION_UPDATE_INTERVAL / 1_000,
+        );
+        const distance = getDistance(position, newPosition);
 
         socket.emit(ServerEvents.POSITION, {
-          position: startPosition,
-          distance: 0,
-          heading,
+          position: newPosition,
+          distance,
+          heading: currentHeading,
         });
 
-        positionInterval = setInterval(
-          emitNewHeading,
-          POSITION_UPDATE_INTERVAL,
-        );
-      })
+        console.log('emit position', newPosition);
 
-      .on(ClientEvents.STOP, () => {
-        socket.emit(ServerEvents.STOPPED);
+        currentPosition = newPosition;
+      };
 
-        clearInterval(positionInterval);
-        clearInterval(headingInterval);
-      })
-
-      .on(ClientEvents.RESET, () => {
-        socket.emit(ServerEvents.RESET, initialPosition);
-      })
-
-      .on(ClientEvents.CLOSE, () => {
-        console.log('websocket connection closed');
-      })
-
-      .on(ClientEvents.ERROR, (err: Error) => {
-        console.error(err);
-      })
-
-      .on(ClientEvents.DISCONNECT, (reason: string) => {
-        console.log(`socket ${socket.id} disconnected due to ${reason}`);
+      socket.emit(ServerEvents.POSITION, {
+        position,
+        distance: 0,
+        heading,
       });
-  },
-);
+
+      positionInterval = setInterval(emitNewHeading, POSITION_UPDATE_INTERVAL);
+    })
+
+    .on(ClientEvents.ZOOM, (zoomLevel: number) => {
+      socket.emit(ServerEvents.ZOOM, zoomLevel);
+    })
+
+    .on(ClientEvents.STOP, () => {
+      socket.emit(ServerEvents.STOPPED);
+      cleanup();
+    })
+
+    .on(ClientEvents.RESET, () => {
+      socket.emit(ServerEvents.RESET, initialPosition);
+    })
+
+    .on(ClientEvents.CLOSE, () => {
+      console.log('websocket connection closed');
+      cleanup();
+    })
+
+    .on(ClientEvents.ERROR, (err: Error) => {
+      console.error(err);
+      cleanup();
+    })
+
+    .on(ClientEvents.DISCONNECT, (reason: string) => {
+      cleanup();
+      console.log(`socket ${socket.id} disconnected due to ${reason}`);
+    });
+});
 
 httpServer
   .once('error', (err) => {

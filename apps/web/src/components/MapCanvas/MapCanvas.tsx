@@ -1,43 +1,32 @@
-import { useEffect, useState } from 'react';
-import { ServerEvents, type Coordinate, type PositionPayload } from 'socket/types';
+import { useEffect } from 'react';
+import { ServerEvents, type Coordinate } from 'socket/types';
 import { clientSocket } from '../../lib/clientSocket';
+import { useZoom } from '../../providers/ZoomProvider/ZoomProvider';
 import { Grid } from './Grid';
 import styles from './MapCanvas.module.css';
 import { Ship } from './Ship';
-import { TrackCanvas } from './TrackCanvas';
+import { Track } from './Track';
 
 export type CanvasProps = {
-  center: Coordinate | null;
+  center: Coordinate;
 };
 
-export const MapCanvas = () => {
-  const [center, setCenter] = useState<Coordinate | null>(null);
+export const MapCanvas = ({ center }: CanvasProps) => {
+  const { updateZoomLevel } = useZoom();
 
   useEffect(() => {
-    const init = ({ position }: PositionPayload) => {
-      setCenter(position);
-    };
-
-    const reset = (resetPosition: Coordinate) => {
-      setCenter(resetPosition);
-    };
-
-    clientSocket.on(ServerEvents.INIT, init);
-    clientSocket.on(ServerEvents.RESET, reset);
+    clientSocket.on(ServerEvents.ZOOM, updateZoomLevel);
 
     return () => {
-      clientSocket.off(ServerEvents.INIT, init);
-      clientSocket.off(ServerEvents.RESET, reset);
+      clientSocket.off(ServerEvents.ZOOM, updateZoomLevel);
     };
-  }, []);
+  }, [updateZoomLevel]);
 
   return (
-    <div className={styles.mapCanvasContainer}>
-      <div className={styles.canvasContainer}>
-        <Grid center={center} />
-        <TrackCanvas center={center} />
-        <Ship center={center} />
-      </div>
+    <div className={styles.canvasContainer}>
+      <Grid center={center} />
+      <Track center={center} />
+      <Ship center={center} />
     </div>
   );
 };

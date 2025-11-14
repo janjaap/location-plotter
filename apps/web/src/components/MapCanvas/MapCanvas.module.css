@@ -1,17 +1,12 @@
 canvas {
+  height: 768px;
   image-rendering: crisp-edges;
   inset: 0;
+  margin: 0;
   position: absolute;
-  width: 100%;
-  height: 100%;
+  width: 1024px;
 }
 
-.mapCanvasContainer {
-  display: flex;
-  flex-direction: column;
-  height: 80%;
-  width: 100%;
-}
 
 .canvasContainer {
   position: relative;
@@ -24,7 +19,10 @@ canvas {
   z-index: 0;
 }
 
-.trackCanvas {
+.track {
+  position: absolute;
+  width: 1024px;
+  height: 768px;
   z-index: 1;
 }
 

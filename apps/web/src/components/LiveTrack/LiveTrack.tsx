@@ -6,7 +6,7 @@ import {
   type StartPositionPayload,
 } from 'socket/types';
 import { clientSocket } from '../../lib/clientSocket';
-import { rotationFromHeading } from '../../lib/rotationFromHeading';
+import { rotationFromHeading } from '../../utils/rotationFromHeading';
 import { MapCanvas } from '../MapCanvas/MapCanvas';
 import styles from './LiveTrack.module.css';
 
@@ -31,29 +31,17 @@ export const LiveTrack = () => {
       setNeedleRotation(heading);
     };
 
-    const marker = (position: Coordinate) => {
-      setCenter(position);
-    };
-
     const reset = ({ lat, long, heading }: StartPositionPayload) => {
       setNeedleRotation(heading);
       setCenter({ lat, long });
     };
 
-    const stopped = () => {
-      setCenter(null);
-    };
-
     clientSocket.on(ServerEvents.INIT, init);
-    clientSocket.on(ServerEvents.MARKER, marker);
     clientSocket.on(ServerEvents.RESET, reset);
-    clientSocket.on(ServerEvents.STOPPED, stopped);
 
     return () => {
       clientSocket.off(ServerEvents.INIT, init);
-      clientSocket.off(ServerEvents.MARKER, marker);
       clientSocket.off(ServerEvents.RESET, reset);
-      clientSocket.off(ServerEvents.STOPPED, stopped);
     };
   }, []);
 
@@ -64,6 +52,8 @@ export const LiveTrack = () => {
       clientSocket.off(ServerEvents.POSITION, updatePosition);
     };
   }, [updatePosition]);
+
+  if (!center) return null;
 
   return (
     <div className={styles.liveTrack}>
@@ -77,9 +67,7 @@ export const LiveTrack = () => {
         </span>
       )}
 
-      {center && <div className={styles.mobMarker} />}
-
-      <MapCanvas />
+      <MapCanvas center={center} />
     </div>
   );
 };

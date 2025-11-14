@@ -1,13 +1,17 @@
-import type { Coordinate } from 'socket/types';
+import { ServerEvents, type Coordinate } from 'socket/types';
 import type { FromTo } from '../types';
+import { SECONDS_PER_MINUTE } from '../utils/constants';
 import { coordsToDmsFormatted, ddToDms, ddToDmsFormatted } from '../utils/ddToDms';
 import { dmsToDd } from '../utils/dmsToDd';
-import { SECONDS_PER_MINUTE } from './gridCoordinate';
+import { Canvas } from './canvas';
+import { clientSocket } from './clientSocket';
 import { Observable } from './Obserservable';
 import { centerMarkerColor, gridLabelColor, gridLineColor, subgridLabelColor } from './tokens';
 
+type Orientation = 'lat' | 'long';
+
 type DrawAxisSideParams = {
-  orientation: 'lat' | 'long';
+  orientation: Orientation;
   baseOffset: number;
   pixelsPerMinute: number;
   subDivSize: number;
@@ -18,51 +22,17 @@ type DrawAxisSideParams = {
 };
 
 type MakeLineCoordsParams = {
-  orientation: 'lat' | 'long';
+  orientation: Orientation;
   pos: number;
   start: number;
   end: number;
 };
 
 export class Grid extends Observable {
-  private minuteDivisions = 2;
-
-  private visibleMinutes = 2;
-
-  private readonly gridLabelWidth = 80;
-
-  private readonly gridPadding = 10;
-
-  private readonly gridLimit = {
-    top: this.gridPadding,
-    right: this.gridPadding,
-    bottom: 2 * this.gridPadding, // prevent overlap with longitude labels
-    left: this.gridPadding, // prevent overlap with latitude labels
-  };
-
-  private readonly visibleSeconds = this.visibleMinutes * SECONDS_PER_MINUTE;
-
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     super(center, canvas);
 
     this.init();
-  }
-
-  get bounds() {
-    return {
-      top: (this.canvasHeight / 2 - this.gridLimit.top) * -1,
-      right: this.canvasWidth / 2 - this.gridLimit.right,
-      bottom: this.canvasHeight / 2 - this.gridLimit.bottom,
-      left: (this.canvasWidth / 2 - this.gridLimit.left - this.gridLabelWidth) * -1,
-    };
-  }
-
-  get canvasHeight() {
-    return this.canvas.height;
-  }
-
-  get canvasWidth() {
-    return this.canvas.width;
   }
 
   get zoom() {
@@ -78,7 +48,14 @@ export class Grid extends Observable {
   private init() {
     this.resizeObserver(this.drawGrid);
     this.drawGrid();
+
+    clientSocket.on(ServerEvents.RESET, this.onExternalReset);
   }
+
+  private onExternalReset = () => {
+    this.reset();
+    this.drawGrid();
+  };
 
   private closestMinute(decimalDegrees: number, offset?: number) {
     const dms = ddToDms(decimalDegrees);
@@ -120,10 +97,34 @@ export class Grid extends Observable {
 
   private drawGrid = () => {
     this.reset();
+    this.drawBounds();
     this.drawCenterMarker();
     this.drawLongitudeLines();
     this.drawLatitudeLines();
   };
+
+  private drawBounds() {
+    this.draw(() => {
+      this.context.rect(
+        this.bounds.left,
+        this.bounds.top,
+        this.bounds.right - this.bounds.left,
+        this.bounds.bottom - this.bounds.top,
+      );
+
+      this.context.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      this.context.fill();
+
+      const margin = 100; // pixels to edge of the grid
+
+      this.context.clearRect(
+        this.bounds.left + margin,
+        this.bounds.top + margin,
+        this.bounds.right - this.bounds.left - margin - margin,
+        this.bounds.bottom - this.bounds.top - margin - margin,
+      );
+    });
+  }
 
   private drawCenterMarker() {
     this.draw(() => {
@@ -148,14 +149,11 @@ export class Grid extends Observable {
     boundsStart,
     boundsEnd,
   }: DrawAxisSideParams) {
-    const canvasLimit = orientation === 'lat' ? this.canvasHeight / 2 : this.canvasWidth / 2;
-    const maxDistance = direction === 1 ? canvasLimit - baseOffset : -canvasLimit - baseOffset;
-    let minuteOffset = -direction;
+    let minuteOffset = orientation === 'lat' ? -direction : direction;
     let pos = baseOffset + direction * pixelsPerMinute;
 
     // Main minute lines
     while (
-      Math.abs(pos) < Math.abs(maxDistance) &&
       this.fitsWithinBounds(orientation === 'long' ? pos : 0, orientation === 'lat' ? pos : 0)
     ) {
       this.drawGridLine(
@@ -166,23 +164,25 @@ export class Grid extends Observable {
           end: boundsEnd,
         }),
       );
+
       this.drawGridLineLabel(
         ddToDmsFormatted(getClosestMinute(minuteOffset)),
-        orientation === 'lat' ? this.bounds.left - this.gridLabelWidth : pos,
-        orientation === 'lat' ? pos : this.bounds.bottom + this.gridPadding,
+        orientation === 'lat' ? this.bounds.left - Canvas.LABEL_WIDTH : pos,
+        orientation === 'lat' ? pos : this.bounds.bottom + Canvas.CANVAS_PADDING,
       );
+
       pos += direction * pixelsPerMinute;
-      minuteOffset += direction;
+      minuteOffset += orientation === 'lat' ? -direction : direction;
     }
 
     // Subdivisions
     pos = baseOffset + direction * subDivSize;
+
     let subIndex = direction;
     const { degrees, minutes } = ddToDms(getClosestMinute());
     const secondsPerSubdivision = SECONDS_PER_MINUTE / (this.minuteDivisions + 1);
 
     while (
-      Math.abs(pos) < Math.abs(maxDistance) &&
       this.fitsWithinBounds(orientation === 'long' ? pos : 0, orientation === 'lat' ? pos : 0)
     ) {
       this.drawGridSubdivisionLine(
@@ -194,17 +194,44 @@ export class Grid extends Observable {
         }),
       );
 
-      const seconds =
-        direction === 1
-          ? SECONDS_PER_MINUTE - secondsPerSubdivision * subIndex
-          : SECONDS_PER_MINUTE - (SECONDS_PER_MINUTE + secondsPerSubdivision * subIndex);
+      let seconds = secondsPerSubdivision * subIndex * direction;
 
-      if (seconds > 0 && seconds < SECONDS_PER_MINUTE) {
-        const label = coordsToDmsFormatted({ degrees, minutes, seconds }, 0);
+      if (
+        (orientation === 'lat' && direction === 1) ||
+        (orientation === 'long' && direction === -1)
+      ) {
+        seconds = SECONDS_PER_MINUTE - seconds;
+      }
+
+      if (seconds !== SECONDS_PER_MINUTE && seconds !== 0) {
+        let minutesAdjustment =
+          (orientation === 'lat' && direction === 1) || (orientation === 'long' && direction === -1)
+            ? -1
+            : 0;
+
+        if (seconds > SECONDS_PER_MINUTE) {
+          minutesAdjustment +=
+            (orientation === 'lat' && direction === 1) ||
+            (orientation === 'long' && direction === -1)
+              ? -1
+              : 1;
+          seconds -= SECONDS_PER_MINUTE;
+        }
+
+        if (seconds < 0) {
+          minutesAdjustment -= 1;
+          seconds += SECONDS_PER_MINUTE;
+        }
+
+        const label = coordsToDmsFormatted(
+          { degrees, minutes: minutes + minutesAdjustment, seconds },
+          0,
+        );
+
         this.drawGridLineLabel(
           label,
-          orientation === 'lat' ? this.bounds.left - this.gridLabelWidth : pos,
-          orientation === 'lat' ? pos : this.bounds.bottom + this.gridPadding,
+          orientation === 'lat' ? this.bounds.left - Canvas.LABEL_WIDTH : pos,
+          orientation === 'lat' ? pos : this.bounds.bottom + Canvas.CANVAS_PADDING,
         );
       }
 
@@ -213,26 +240,21 @@ export class Grid extends Observable {
     }
   }
 
-  private getPixelsPerSecond(axisSize: number) {
-    return (axisSize / this.visibleSeconds) * this.zoom;
-  }
-
   private drawGridAxis({
     orientation,
     getClosestMinute,
-    axisSize,
     boundsStart,
     boundsEnd,
     labelAlign,
   }: {
     orientation: 'lat' | 'long';
     getClosestMinute: (offset?: number) => number;
-    axisSize: number;
     boundsStart: number;
     boundsEnd: number;
     labelAlign: CanvasTextAlign;
   }) {
-    const pixelsPerSecond = this.getPixelsPerSecond(axisSize);
+    const pixelsPerSecond =
+      orientation === 'lat' ? this.pixelsPerLatSecond : this.pixelsPerLongSecond;
     const pixelsPerMinute = pixelsPerSecond * SECONDS_PER_MINUTE;
     const subDivSize = pixelsPerMinute / (this.minuteDivisions + 1);
 
@@ -257,8 +279,8 @@ export class Grid extends Observable {
 
     this.drawGridLineLabel(
       ddToDmsFormatted(closest),
-      orientation === 'lat' ? this.bounds.left - this.gridLabelWidth : baseOffset,
-      orientation === 'lat' ? baseOffset : this.bounds.bottom + this.gridPadding,
+      orientation === 'lat' ? this.bounds.left - Canvas.LABEL_WIDTH : baseOffset,
+      orientation === 'lat' ? baseOffset : this.bounds.bottom + Canvas.CANVAS_PADDING,
     );
 
     // Draw outward in both directions
@@ -316,10 +338,10 @@ export class Grid extends Observable {
 
   private drawLabel(text: string, x: number, y: number, fillStyle: string) {
     this.draw(() => {
-      this.context.font = '13px system-ui';
+      this.context.font = '12px system-ui';
       this.context.textBaseline = 'middle';
       this.context.fillStyle = fillStyle;
-      this.context.fillText(text, Math.round(x), Math.round(y), this.gridLabelWidth);
+      this.context.fillText(text, Math.round(x), Math.round(y), Canvas.LABEL_WIDTH);
     });
   }
 
@@ -327,7 +349,6 @@ export class Grid extends Observable {
     this.drawGridAxis({
       orientation: 'long',
       getClosestMinute: this.closestLongMinute,
-      axisSize: this.bounds.right - this.bounds.left,
       boundsStart: this.bounds.top,
       boundsEnd: this.bounds.bottom,
       labelAlign: 'center',
@@ -338,7 +359,6 @@ export class Grid extends Observable {
     this.drawGridAxis({
       orientation: 'lat',
       getClosestMinute: this.closestLatMinute,
-      axisSize: this.bounds.bottom - this.bounds.top,
       boundsStart: this.bounds.left,
       boundsEnd: this.bounds.right,
       labelAlign: 'start',
@@ -347,10 +367,16 @@ export class Grid extends Observable {
 
   private fitsWithinBounds(x: number, y: number) {
     return (
-      x >= this.bounds.left &&
-      x <= this.bounds.right &&
+      x >= this.bounds.left + Canvas.LABEL_WIDTH / 2 &&
+      x <= this.bounds.right - Canvas.LABEL_WIDTH / 2 &&
       y >= this.bounds.top &&
       y <= this.bounds.bottom
     );
+  }
+
+  teardown() {
+    clientSocket.off(ServerEvents.RESET, this.onExternalReset);
+
+    super.teardown();
   }
 }

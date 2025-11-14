@@ -10,24 +10,19 @@ export const Grid = ({ center }: CanvasProps) => {
   const { zoomLevel } = useZoom();
 
   useEffect(() => {
-    if (!canvasRef.current || !center || gridCanvasRef.current) return;
+    if (!canvasRef.current || gridCanvasRef.current) return;
 
     gridCanvasRef.current = new GridClass(center, canvasRef.current);
 
-    const grid = gridCanvasRef.current;
-
-    return () => {
-      grid.teardown();
-    };
-  }, [center]);
+    return () => gridCanvasRef.current?.teardown();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [center.lat, center.long]);
 
   useEffect(() => {
     if (!gridCanvasRef.current) return;
 
     gridCanvasRef.current.zoom = zoomLevel;
   }, [zoomLevel]);
-
-  if (!center) return null;
 
   return (
     <canvas

@@ -1,38 +1,34 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Ship as ShipClass } from '../../lib/Ship';
 import { useZoom } from '../../providers/ZoomProvider/ZoomProvider';
 import type { CanvasProps } from './MapCanvas';
 import styles from './MapCanvas.module.css';
 
 export const Ship = ({ center }: CanvasProps) => {
-  const trackIndicatorCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const shipRef = useRef<ShipClass | null>(null);
+  const shipCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [ship, setShip] = useState<ShipClass | null>(null);
   const { zoomLevel } = useZoom();
 
   useEffect(() => {
-    if (!trackIndicatorCanvasRef.current || !center || shipRef.current) return;
+    if (!shipCanvasRef.current) return;
 
-    shipRef.current = new ShipClass(center, trackIndicatorCanvasRef.current);
+    const shipInstance = new ShipClass(center, shipCanvasRef.current);
+    setShip(shipInstance);
 
-    const ship = shipRef.current;
-
-    return () => {
-      ship.teardown();
-    };
-  }, [center]);
+    return () => shipInstance.teardown();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [center.lat, center.long]);
 
   useEffect(() => {
-    if (!shipRef.current) return;
+    if (!ship) return;
 
-    // shipRef.current.zoom = zoomLevel;
-  }, [zoomLevel]);
-
-  if (!center) return null;
+    ship.zoom = zoomLevel;
+  }, [ship, zoomLevel]);
 
   return (
     <canvas
       className={styles.ship}
-      ref={trackIndicatorCanvasRef}
+      ref={shipCanvasRef}
     />
   );
 };

@@ -3,7 +3,7 @@ import type { DMS } from 'socket/types';
 const zeroPad = (num: number, places = 3) => String(num).padStart(places, '0');
 
 const normalizeValues = ({ degrees, minutes, seconds }: DMS): DMS => {
-  if (seconds >= 60) {
+  if (Math.round(seconds) >= 60) {
     seconds = 0;
     minutes += 1;
   }
@@ -37,7 +37,7 @@ export const ddToDms = (decimalDegrees: number) => {
 };
 
 export const ddToDmsFormatted = (decimalDegrees: number, decimalPlaces?: number) =>
-  toDmsFormatted(normalizeValues(ddToDms(decimalDegrees)), decimalPlaces);
+  toDmsFormatted(ddToDms(decimalDegrees), decimalPlaces);
 
 export const coordsToDmsFormatted = (dms: DMS, decimalPlaces?: number) =>
-  toDmsFormatted(normalizeValues(dms), decimalPlaces);
+  toDmsFormatted(dms, decimalPlaces);
