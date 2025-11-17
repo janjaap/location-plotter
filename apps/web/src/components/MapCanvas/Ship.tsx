@@ -12,7 +12,7 @@ export const Ship = ({ center }: CanvasProps) => {
   useEffect(() => {
     if (!shipCanvasRef.current) return;
 
-    const shipInstance = new ShipClass(center, shipCanvasRef.current);
+    const shipInstance = new ShipClass(center, shipCanvasRef.current, zoomLevel);
     setShip(shipInstance);
 
     return () => shipInstance.teardown();

@@ -20,7 +20,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   },
 });
 
-const POSITION_UPDATE_INTERVAL = 1_000; // ms
+export const POSITION_UPDATE_INTERVAL = 1_000; // ms
 const MAX_BEARING = 120; // degrees
 
 function applyRandomBearing(heading: number) {
@@ -38,11 +38,13 @@ function applyRandomBearing(heading: number) {
 
 let positionInterval: NodeJS.Timeout;
 let headingInterval: NodeJS.Timeout;
+let speedInterval: NodeJS.Timeout;
 
 io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {
   let initialPosition: StartPositionPayload;
   let currentPosition: Coordinate;
   let currentHeading: number;
+  let currentSpeed: number;
 
   sockets.add(socket);
 
@@ -51,6 +53,7 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
   const cleanup = () => {
     clearInterval(positionInterval);
     clearInterval(headingInterval);
+    clearInterval(speedInterval);
   };
 
   socket
@@ -69,6 +72,7 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       const { position, speed, heading } = startPosition;
       currentHeading = Number(heading);
       currentPosition = position;
+      currentSpeed = speed;
 
       const generateNewHeading = () => {
         currentHeading = applyRandomBearing(currentHeading);
@@ -79,11 +83,23 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
 
       generateNewHeading();
 
+      const generateNewSpeed = () => {
+        const speedChange = Math.floor(Math.random() * 10) - 1;
+        currentSpeed = Math.max(0, currentSpeed + speedChange);
+
+        console.log({ speedChange, currentSpeed });
+
+        clearInterval(speedInterval);
+        speedInterval = setInterval(generateNewSpeed, Math.random() * 5_000);
+      };
+
+      generateNewSpeed();
+
       const emitNewHeading = () => {
         const newPosition = updatePosition(
           currentPosition.lat,
           currentPosition.long,
-          speed,
+          currentSpeed,
           currentHeading,
           POSITION_UPDATE_INTERVAL / 1_000,
         );
@@ -93,9 +109,8 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
           position: newPosition,
           distance,
           heading: currentHeading,
+          speed: currentSpeed,
         });
-
-        console.log('emit position', newPosition);
 
         currentPosition = newPosition;
       };
@@ -104,6 +119,7 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
         position,
         distance: 0,
         heading,
+        speed: currentSpeed,
       });
 
       positionInterval = setInterval(emitNewHeading, POSITION_UPDATE_INTERVAL);

@@ -1,4 +1,4 @@
-import { ServerEvents, type Coordinate } from 'socket/types';
+import { ServerEvents } from 'socket/types';
 import type { FromTo } from '../types';
 import { SECONDS_PER_MINUTE } from '../utils/constants';
 import { coordsToDmsFormatted, ddToDms, ddToDmsFormatted } from '../utils/ddToDms';
@@ -29,8 +29,8 @@ type MakeLineCoordsParams = {
 };
 
 export class Grid extends Observable {
-  constructor(center: Coordinate, canvas: HTMLCanvasElement) {
-    super(center, canvas);
+  constructor(...args: ConstructorParameters<typeof Canvas>) {
+    super(...args);
 
     this.init();
   }
@@ -105,24 +105,26 @@ export class Grid extends Observable {
 
   private drawBounds() {
     this.draw(() => {
-      this.context.rect(
-        this.bounds.left,
-        this.bounds.top,
-        this.bounds.right - this.bounds.left,
-        this.bounds.bottom - this.bounds.top,
-      );
+      const margin = 100;
+      const left = this.bounds.left;
+      const top = this.bounds.top;
+      const width = this.bounds.right - this.bounds.left;
+      const height = this.bounds.bottom - this.bounds.top;
 
-      this.context.fillStyle = 'rgba(255, 255, 255, 0.1)';
-      this.context.fill();
+      console.log(this.zoom);
 
-      const margin = 100; // pixels to edge of the grid
+      for (let i = 0; i <= 4; i++) {
+        this.context.rect(left, top, width, height);
+        this.context.fillStyle = 'rgba(255, 255, 255, 0.01)';
+        this.context.fill();
 
-      this.context.clearRect(
-        this.bounds.left + margin,
-        this.bounds.top + margin,
-        this.bounds.right - this.bounds.left - margin - margin,
-        this.bounds.bottom - this.bounds.top - margin - margin,
-      );
+        this.context.clearRect(
+          left + margin * i,
+          top + margin * i,
+          width - margin * i * 2,
+          height - margin * i * 2,
+        );
+      }
     });
   }
 
@@ -254,7 +256,7 @@ export class Grid extends Observable {
     labelAlign: CanvasTextAlign;
   }) {
     const pixelsPerSecond =
-      orientation === 'lat' ? this.pixelsPerLatSecond : this.pixelsPerLongSecond;
+      orientation === 'lat' ? this.getPixelsPerLatSecond() : this.getPixelsPerLongSecond();
     const pixelsPerMinute = pixelsPerSecond * SECONDS_PER_MINUTE;
     const subDivSize = pixelsPerMinute / (this.minuteDivisions + 1);
 

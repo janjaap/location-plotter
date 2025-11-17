@@ -8,7 +8,6 @@ export default defineConfig({
           name: 'socket',
           root: './apps/socket',
           environment: 'node',
-          // setupFiles: ['./apps/socket/vitest.config.ts'],
         },
       },
       {
@@ -16,7 +15,6 @@ export default defineConfig({
           name: 'web',
           root: './apps/web',
           environment: 'jsdom',
-          setupFiles: ['./apps/web/vitest.config.ts'],
         },
       },
     ],

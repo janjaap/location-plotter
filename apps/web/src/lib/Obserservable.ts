@@ -1,4 +1,3 @@
-import type { Coordinate } from 'socket/types';
 import { Canvas } from './canvas';
 
 export class Observable extends Canvas {
@@ -8,8 +7,9 @@ export class Observable extends Canvas {
   private initialCanvasWidth: number;
   private initialCanvasHeight: number;
 
-  constructor(center: Coordinate, canvas: HTMLCanvasElement) {
-    super(center, canvas);
+  constructor(...args: ConstructorParameters<typeof Canvas>) {
+    super(...args);
+    const canvas = args[1];
     this.canvas = canvas;
     this.initialCanvasWidth = canvas.clientWidth;
     this.initialCanvasHeight = canvas.clientHeight;

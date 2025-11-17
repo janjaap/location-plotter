@@ -28,8 +28,9 @@ export type StartPositionPayload = {
 };
 export type PositionPayload = {
   position: Coordinate;
-  distance: number;
+  distance?: number;
   heading: number;
+  speed?: number;
 };
 
 export interface ServerToClientEvents {

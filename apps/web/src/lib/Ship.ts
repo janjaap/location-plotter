@@ -8,7 +8,7 @@ import {
 import type { GridPoint } from '../types';
 import { gridCoordinate } from '../utils/gridCoordinate';
 import { rotationFromHeading } from '../utils/rotationFromHeading';
-import { zoomFactorToLevel } from './canvas';
+import { Canvas, zoomFactorToLevel } from './canvas';
 import { clientSocket } from './clientSocket';
 import { Observable } from './Obserservable';
 import { trackIndicatorColor } from './tokens';
@@ -17,8 +17,8 @@ export class Ship extends Observable {
   private heading: number | undefined;
   private position: Coordinate | undefined;
 
-  constructor(center: Coordinate, canvas: HTMLCanvasElement) {
-    super(center, canvas);
+  constructor(...args: ConstructorParameters<typeof Canvas>) {
+    super(...args);
 
     this.init();
   }
@@ -37,7 +37,6 @@ export class Ship extends Observable {
     this.drawOwnPosition({
       position: this.position ?? this.center,
       heading: this.heading,
-      distance: 0,
     });
   }
 
@@ -52,7 +51,6 @@ export class Ship extends Observable {
       this.drawOwnPosition({
         position: this.position ?? this.center,
         heading: this.heading,
-        distance: 0,
       });
     });
 
@@ -67,7 +65,6 @@ export class Ship extends Observable {
     this.drawOwnPosition({
       position,
       heading,
-      distance: 0,
     });
   };
 
@@ -89,8 +86,12 @@ export class Ship extends Observable {
     );
   }
 
-  private drawOwnPosition = ({ position, heading }: PositionPayload) => {
-    this.reset();
+  private drawOwnPosition = ({ position, heading, speed }: PositionPayload) => {
+    if (this.position) {
+      const { x, y } = this.getGridCoordinate(this.position);
+
+      this.context.clearRect(x - 100, y - 100, 200, 200);
+    }
 
     const indicatorWidth = 14;
     const indicatorHeight = 6;
@@ -99,24 +100,43 @@ export class Ship extends Observable {
     const bearing = rotationFromHeading(this.heading ?? heading, heading);
 
     // TODO: smooth animation from one heading to another
+    {
+      this.draw(() => {
+        this.context.lineWidth = 1;
+        this.context.strokeStyle = trackIndicatorColor;
 
-    this.draw(() => {
-      this.context.lineWidth = 1;
-      this.context.strokeStyle = trackIndicatorColor;
+        this.context.translate(x, y);
 
-      this.context.translate(x, y);
-      this.context.rotate((Math.PI / 180) * bearing);
+        this.context.rotate((Math.PI / 180) * bearing);
 
-      this.drawCircle(0, 0, indicatorWidth, 'stroke');
-      this.drawCircle(0, 0, indicatorHeight, 'stroke');
+        this.drawCircle(0, 0, indicatorWidth, 'stroke');
+        this.drawCircle(0, 0, indicatorHeight, 'stroke');
 
-      this.drawLine({ from: { x: 0, y: 0 }, to: { x: 0, y: -40 } });
-    });
+        if (speed) {
+          this.drawLine({ from: { x: 0, y: 0 }, to: { x: 0, y: speed * -1.5 } });
+        }
+      });
+    }
+
+    // TODO: zoom back in when position fits within bounds with zoomLevel plus one
 
     if (!this.fitsWithinBounds({ x, y })) {
       const level = zoomFactorToLevel(this.zoom);
       clientSocket.emit(ClientEvents.ZOOM, level - 1);
     }
+    // else {
+    //   const { x, y } = gridCoordinate({
+    //     position,
+    //     reference: this.center,
+    //     pixelsPerLatSecond: this.getPixelsPerLatSecond(this.zoom + 1),
+    //     pixelsPerLongSecond: this.getPixelsPerLongSecond(this.zoom + 1),
+    //   });
+
+    //   if (this.fitsWithinBounds({ x, y })) {
+    //     const level = zoomFactorToLevel(this.zoom);
+    //     clientSocket.emit(ClientEvents.ZOOM, level + 1);
+    //   }
+    // }
 
     this.heading = heading;
     this.position = position;
@@ -126,8 +146,8 @@ export class Ship extends Observable {
     return gridCoordinate({
       position,
       reference: this.center,
-      pixelsPerLatSecond: this.pixelsPerLatSecond,
-      pixelsPerLongSecond: this.pixelsPerLongSecond,
+      pixelsPerLatSecond: this.getPixelsPerLatSecond(),
+      pixelsPerLongSecond: this.getPixelsPerLongSecond(),
     });
   }
 

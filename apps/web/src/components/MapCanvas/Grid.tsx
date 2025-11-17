@@ -12,7 +12,7 @@ export const Grid = ({ center }: CanvasProps) => {
   useEffect(() => {
     if (!canvasRef.current || gridCanvasRef.current) return;
 
-    gridCanvasRef.current = new GridClass(center, canvasRef.current);
+    gridCanvasRef.current = new GridClass(center, canvasRef.current, zoomLevel);
 
     return () => gridCanvasRef.current?.teardown();
     // eslint-disable-next-line react-hooks/exhaustive-deps

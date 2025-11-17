@@ -26,9 +26,12 @@ export abstract class Canvas {
 
   protected minuteDivisions = 1;
 
-  constructor(center: Coordinate, canvas: HTMLCanvasElement) {
+  constructor(center: Coordinate, canvas: HTMLCanvasElement, zoomLevel = 1) {
     this.center = center;
     this.canvas = canvas;
+
+    this.zoomFactor = zoomLevelToFactor(zoomLevel);
+    this.minuteDivisions = zoomLevel;
 
     const context = canvas.getContext('2d');
 
@@ -66,16 +69,24 @@ export abstract class Canvas {
     this.minuteDivisions = zoomLevel;
   }
 
-  get pixelsPerLongSecond() {
-    return this.getPixelsPerSecond(this.bounds.right - this.bounds.left, Canvas.VISIBLE_SECONDS);
+  protected getPixelsPerLongSecond(zoomLevel = this.zoom) {
+    return this.getPixelsPerSecond(
+      this.bounds.right - this.bounds.left,
+      Canvas.VISIBLE_SECONDS,
+      zoomLevel,
+    );
   }
 
-  get pixelsPerLatSecond() {
-    return this.getPixelsPerSecond(this.bounds.bottom - this.bounds.top, Canvas.VISIBLE_SECONDS);
+  protected getPixelsPerLatSecond(zoomLevel = this.zoom) {
+    return this.getPixelsPerSecond(
+      this.bounds.bottom - this.bounds.top,
+      Canvas.VISIBLE_SECONDS,
+      zoomLevel,
+    );
   }
 
-  private getPixelsPerSecond(pixels: number, seconds: number) {
-    return (pixels / seconds) * this.zoom;
+  private getPixelsPerSecond(pixels: number, seconds: number, zoomLevel = this.zoom) {
+    return (pixels / seconds) * zoomLevel;
   }
 
   protected reset() {
