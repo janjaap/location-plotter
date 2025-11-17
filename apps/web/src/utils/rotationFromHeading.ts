@@ -6,7 +6,5 @@ export const rotationDelta = (currentHeading: number, newHeading: number) => {
   return ((normalizedHeading - (currentHeading % 360) + 540) % 360) - 180;
 };
 
-export const rotationFromHeading = (
-  currentHeading: number,
-  newHeading: number,
-) => currentHeading + rotationDelta(currentHeading, newHeading);
+export const rotationFromHeading = (currentHeading: number, newHeading: number) =>
+  currentHeading + rotationDelta(currentHeading, newHeading);
