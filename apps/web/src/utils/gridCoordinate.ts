@@ -8,6 +8,7 @@ interface GridCoordinateParams {
   reference: Coordinate;
   pixelsPerLatSecond: number;
   pixelsPerLongSecond: number;
+  offset?: GridPoint;
 }
 
 export const gridCoordinate = ({
@@ -15,6 +16,7 @@ export const gridCoordinate = ({
   reference,
   pixelsPerLatSecond,
   pixelsPerLongSecond,
+  offset,
 }: GridCoordinateParams): GridPoint => {
   const coordLatDms = ddToDms(position.lat);
   const coordLongDms = ddToDms(position.long);
@@ -34,6 +36,10 @@ export const gridCoordinate = ({
 
   const x = Math.round(longSecondsDiff * pixelsPerLongSecond);
   const y = Math.round(latSecondsDiff * pixelsPerLatSecond);
+
+  if (offset) {
+    return { x: x + offset.x, y: y + offset.y };
+  }
 
   return { x, y };
 };

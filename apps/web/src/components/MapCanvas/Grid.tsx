@@ -1,33 +1,49 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ServerEvents } from 'socket/types';
+import { clientSocket } from '../../lib/clientSocket';
 import { Grid as GridClass } from '../../lib/Grid';
-import { useZoom } from '../../providers/ZoomProvider/ZoomProvider';
+import { useParams } from '../../providers/ParamsProvider/ParamsProvider';
 import type { CanvasProps } from './MapCanvas';
 import styles from './MapCanvas.module.css';
 
 export const Grid = ({ center }: CanvasProps) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const gridCanvasRef = useRef<GridClass | null>(null);
-  const { zoomLevel } = useZoom();
+  const gridCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [grid, setGrid] = useState<GridClass | null>(null);
+  const { offset } = useParams();
 
   useEffect(() => {
-    if (!canvasRef.current || gridCanvasRef.current) return;
+    if (!gridCanvasRef.current || grid) return;
 
-    gridCanvasRef.current = new GridClass(center, canvasRef.current, zoomLevel);
+    const gridInstance = new GridClass(center, gridCanvasRef.current);
+    setGrid(gridInstance);
+  }, [center, center.lat, center.long, grid]);
 
-    return () => gridCanvasRef.current?.teardown();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [center.lat, center.long]);
+  useEffect(() => {
+    if (!grid || (!offset.x && !offset.y)) return;
+
+    grid.offset = offset;
+  }, [grid, offset]);
 
   useEffect(() => {
     if (!gridCanvasRef.current) return;
 
-    gridCanvasRef.current.zoom = zoomLevel;
-  }, [zoomLevel]);
+    const reset = () => {
+      if (!grid) return;
+
+      grid.drawGrid(true);
+    };
+
+    clientSocket.on(ServerEvents.RESET, reset);
+
+    return () => {
+      clientSocket.offAny(reset);
+    };
+  }, [grid]);
 
   return (
     <canvas
       className={styles.grid}
-      ref={canvasRef}
+      ref={gridCanvasRef}
     />
   );
 };

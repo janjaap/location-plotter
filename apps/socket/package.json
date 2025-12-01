@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "pnpm dlx tsx index.ts",
+    "dev": "DEBUG=socket.io:server* pnpm dlx tsx index.ts",
     "test": "vitest ./ --config ../../vite.config.ts"
   },
   "keywords": [],

@@ -1,7 +1,27 @@
-form {
+.paramsForm {
+  background-color: #242424;
   display: flex;
   gap: 1rem;
   flex-direction: column;
+  padding: 1rem;
+  position: absolute;
+  left: -15rem;
+  transition: left 0.2s ease-in-out;
+  z-index: var(--elevation-overlay-z);
+}
+
+.toggle {
+  border-radius: 0;
+  padding: 0.5rem;
+  position: absolute;
+  top: 0;
+  right: -3.8rem;
+}
+
+.paramsForm:focus-within {
+  left: 1rem;
+  transition: left 0.2s ease-in-out;
+
 }
 
 label {

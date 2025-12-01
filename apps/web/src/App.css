@@ -1,13 +1,21 @@
-#root {
-  max-width: 90cqw;
-  margin: 0 auto;
-  width: 100%;
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background-color: #242424;
+
+  --color-red: #f0000;
+  --elevation-sunken-z: 100;
+  --elevation-default-z: 200;
+  --elevation-raised-z: 300;
+  --elevation-overlay-z: 400;
+  --elevation-overflow-z: 500;
 }
 
 html,
 body,
-#root {
+#root,
+main {
   height: 100%;
+  width: 100%;
 }
 
 body,
@@ -15,10 +23,15 @@ html {
   margin: 0;
 }
 
+#root {
+  max-width: 90cqw;
+  margin: 0 auto;
+}
+
 main {
+  color: rgba(255, 255, 255, 0.87);
   display: grid;
-  grid-template-columns: 12rem auto;
-  width: 100%;
   gap: 1rem;
+  grid-template-columns: 12rem auto;
   padding: 1rem 1rem 0;
 }

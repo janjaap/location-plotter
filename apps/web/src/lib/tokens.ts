@@ -1,4 +1,4 @@
-export const gridLineColor = '#424548'; // add transparency for subdiv lines
+export const gridLineColor = '#424548';
 export const trackColor = '#99c4dc';
 export const trackIndicatorColor = '#99c4dc';
 export const centerMarkerColor = '#ff0000';

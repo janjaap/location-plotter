@@ -1,7 +1,6 @@
 import { type Config } from 'prettier';
 
 const config: Config = {
-  bracketSameLine: true,
   endOfLine: 'auto',
   parser: 'typescript',
   printWidth: 100,

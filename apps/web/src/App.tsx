@@ -1,17 +1,19 @@
 import './App.css';
-import { LiveTrack } from './components/LiveTrack/LiveTrack';
+import { DisconnectionWarning } from './components/DisconnectionWarning/DisconnectionWarning';
+import { MapCanvas } from './components/MapCanvas/MapCanvas';
 
 import { ParamsForm } from './components/ParamsForm/ParamsForm';
-import { ZoomProvider } from './providers/ZoomProvider/ZoomProvider';
+import { ParamsProvider } from './providers/ParamsProvider/ParamsProvider';
 
 function App() {
   return (
     <main>
-      <ZoomProvider>
+      <DisconnectionWarning />
+      <ParamsProvider>
         <ParamsForm />
 
-        <LiveTrack />
-      </ZoomProvider>
+        <MapCanvas />
+      </ParamsProvider>
     </main>
   );
 }

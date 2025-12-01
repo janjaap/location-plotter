@@ -1,9 +1,12 @@
 import { type Coordinate } from 'socket/types';
-import type { CanvasBounds, FromTo } from '../types';
-import { SECONDS_PER_MINUTE } from '../utils/constants';
+import type { CanvasBounds, FromTo, GridPoint } from '../types';
 
-export const zoomLevelToFactor = (zoomLevel: number) => 1 + (zoomLevel - 1) / 2;
-export const zoomFactorToLevel = (zoomFactor: number) => 1 + (zoomFactor - 1) * 2;
+type TextParams = {
+  text: string;
+  gridPoint: GridPoint;
+  maxWidth?: number;
+  clearBefore?: boolean;
+};
 
 export abstract class Canvas {
   static CANVAS_PADDING = 10;
@@ -12,11 +15,9 @@ export abstract class Canvas {
 
   static LABEL_WIDTH = 80;
 
-  static VISIBLE_MINUTES = 3;
+  static PIXELS_PER_LONG_SECOND = 15;
 
-  static VISIBLE_SECONDS = Canvas.VISIBLE_MINUTES * SECONDS_PER_MINUTE;
-
-  private zoomFactor = 1;
+  static PIXELS_PER_LAT_SECOND = 13;
 
   protected canvas: HTMLCanvasElement;
 
@@ -24,14 +25,15 @@ export abstract class Canvas {
 
   protected context!: CanvasRenderingContext2D;
 
-  protected minuteDivisions = 1;
+  protected minuteDivisions = 5;
 
-  constructor(center: Coordinate, canvas: HTMLCanvasElement, zoomLevel = 1) {
+  protected previousOffset: GridPoint = { x: 0, y: 0 };
+
+  protected translationOffset: GridPoint = { x: 0, y: 0 };
+
+  constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     this.center = center;
     this.canvas = canvas;
-
-    this.zoomFactor = zoomLevelToFactor(zoomLevel);
-    this.minuteDivisions = zoomLevel;
 
     const context = canvas.getContext('2d');
 
@@ -41,6 +43,15 @@ export abstract class Canvas {
 
     this.context = context as CanvasRenderingContext2D;
     this.context.textRendering = 'optimizeLegibility';
+  }
+
+  get offset(): GridPoint {
+    return this.translationOffset;
+  }
+
+  set offset(value: GridPoint) {
+    this.previousOffset = this.translationOffset;
+    this.translationOffset = value;
   }
 
   get canvasHeight() {
@@ -60,33 +71,60 @@ export abstract class Canvas {
     };
   }
 
-  get zoom() {
-    return this.zoomFactor;
+  protected text({
+    text,
+    gridPoint,
+    maxWidth = Canvas.LABEL_WIDTH,
+    clearBefore = false,
+  }: TextParams) {
+    const x = Math.round(gridPoint.x);
+    const y = Math.round(gridPoint.y);
+
+    if (clearBefore) {
+      this.clearRect(
+        { x: gridPoint.x, y: gridPoint.y - Canvas.LABEL_HEIGHT / 2 },
+        Canvas.LABEL_WIDTH,
+        Canvas.LABEL_HEIGHT,
+      );
+    }
+
+    this.context.fillText(text, x, y, maxWidth);
   }
 
-  set zoom(zoomLevel: number) {
-    this.zoomFactor = zoomLevelToFactor(zoomLevel);
-    this.minuteDivisions = zoomLevel;
+  protected clearRect(gridPoint: GridPoint, width: number, height: number) {
+    const { x, y } = gridPoint;
+
+    const fromX = Math.round(x);
+    const fromY = Math.round(y);
+
+    this.context.clearRect(fromX, fromY, width, height);
   }
 
-  protected getPixelsPerLongSecond(zoomLevel = this.zoom) {
-    return this.getPixelsPerSecond(
-      this.bounds.right - this.bounds.left,
-      Canvas.VISIBLE_SECONDS,
-      zoomLevel,
-    );
+  protected clearDirty(gridPoint: GridPoint, radius: number) {
+    const { x, y } = gridPoint;
+
+    const fromX = Math.round(x);
+    const fromY = Math.round(y);
+
+    this.context.clearRect(fromX - radius, fromY - radius, radius * 2, radius * 2);
   }
 
-  protected getPixelsPerLatSecond(zoomLevel = this.zoom) {
-    return this.getPixelsPerSecond(
-      this.bounds.bottom - this.bounds.top,
-      Canvas.VISIBLE_SECONDS,
-      zoomLevel,
-    );
+  protected clipRect(gridPoint: GridPoint, width: number, height: number) {
+    const { x, y } = gridPoint;
+
+    const fromX = Math.round(x);
+    const fromY = Math.round(y);
+
+    this.context.rect(fromX, fromY, width, height);
+    this.context.clip();
   }
 
-  private getPixelsPerSecond(pixels: number, seconds: number, zoomLevel = this.zoom) {
-    return (pixels / seconds) * zoomLevel;
+  protected clip({ x, y }: GridPoint, radius: number) {
+    const fromX = Math.round(x);
+    const fromY = Math.round(y);
+
+    this.context.rect(fromX - radius, fromY - radius, radius * 2, radius * 2);
+    this.context.clip();
   }
 
   protected reset() {
@@ -94,7 +132,7 @@ export abstract class Canvas {
     this.centerContext();
   }
 
-  private centerContext() {
+  protected centerContext() {
     this.canvas.width = this.canvas.clientWidth;
     this.canvas.height = this.canvas.clientHeight;
 
@@ -112,7 +150,7 @@ export abstract class Canvas {
     );
   }
 
-  draw(drawFunc: () => void) {
+  protected draw(drawFunc: () => void) {
     this.context.save();
 
     drawFunc();
@@ -120,9 +158,12 @@ export abstract class Canvas {
     this.context.restore();
   }
 
-  drawCircle(x: number, y: number, radius: number, appearance: 'fill' | 'stroke') {
+  protected drawCircle({ x, y }: GridPoint, radius: number, appearance: 'fill' | 'stroke') {
+    const centerX = Math.round(x);
+    const centerY = Math.round(y);
+
     this.context.beginPath();
-    this.context.arc(x, y, radius, 0, Math.PI * 2);
+    this.context.arc(centerX, centerY, radius, 0, Math.PI * 2);
     this.context.closePath();
 
     if (appearance === 'fill') {
@@ -132,7 +173,7 @@ export abstract class Canvas {
     }
   }
 
-  drawInBackground(drawFunc: () => void) {
+  protected drawInBackground(drawFunc: () => void) {
     this.context.save();
     this.context.globalCompositeOperation = 'destination-over';
 
@@ -141,13 +182,40 @@ export abstract class Canvas {
     this.context.restore();
   }
 
-  drawLine({ from, to }: FromTo) {
+  protected drawLine({ from, to }: FromTo, clearBefore = false) {
+    const fromX = Math.round(from.x);
+    const fromY = Math.round(from.y);
+    const toX = Math.round(to.x);
+    const toY = Math.round(to.y);
+
+    if (clearBefore) {
+      const width = Math.abs(fromX - toX);
+      const height = Math.abs(fromY - toY);
+
+      this.context.clearRect(fromX, fromY, width, height);
+    }
+
     this.context.beginPath();
-    if (from) this.context.moveTo(Math.round(from.x), Math.round(from.y));
-    this.context.lineTo(Math.round(to.x), Math.round(to.y));
+    this.context.moveTo(fromX, fromY);
+    this.context.lineTo(toX, toY);
     this.context.closePath();
     this.context.stroke();
   }
 
-  teardown() {}
+  protected withOffset(gridPoint: GridPoint): GridPoint {
+    const { x, y } = gridPoint;
+
+    return {
+      x: x + this.translationOffset.x,
+      y: y + this.translationOffset.y,
+    };
+  }
+
+  protected withOffsetX(value: number): number {
+    return value + this.translationOffset.x;
+  }
+
+  protected withOffsetY(value: number): number {
+    return value + this.translationOffset.y;
+  }
 }

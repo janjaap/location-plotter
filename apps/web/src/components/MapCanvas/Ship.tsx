@@ -1,29 +1,39 @@
 import { useEffect, useRef, useState } from 'react';
+import { ServerEvents, type PositionPayload } from 'socket/types';
+import { clientSocket } from '../../lib/clientSocket';
 import { Ship as ShipClass } from '../../lib/Ship';
-import { useZoom } from '../../providers/ZoomProvider/ZoomProvider';
 import type { CanvasProps } from './MapCanvas';
 import styles from './MapCanvas.module.css';
 
 export const Ship = ({ center }: CanvasProps) => {
   const shipCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [ship, setShip] = useState<ShipClass | null>(null);
-  const { zoomLevel } = useZoom();
 
   useEffect(() => {
-    if (!shipCanvasRef.current) return;
+    if (!shipCanvasRef.current || ship) return;
 
-    const shipInstance = new ShipClass(center, shipCanvasRef.current, zoomLevel);
+    const shipInstance = new ShipClass(center, shipCanvasRef.current);
+
     setShip(shipInstance);
-
-    return () => shipInstance.teardown();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [center.lat, center.long]);
+  }, [center, center.lat, center.long, ship]);
 
   useEffect(() => {
-    if (!ship) return;
+    const renderShip = ({ position, heading, speed }: PositionPayload) => {
+      if (!ship) return;
 
-    ship.zoom = zoomLevel;
-  }, [ship, zoomLevel]);
+      ship.renderCurrentPosition({ position, heading, speed });
+    };
+
+    clientSocket.on(ServerEvents.INIT, renderShip);
+    clientSocket.on(ServerEvents.POSITION, renderShip);
+    clientSocket.on(ServerEvents.RESET, renderShip);
+
+    return () => {
+      clientSocket.off(ServerEvents.INIT, renderShip);
+      clientSocket.off(ServerEvents.POSITION, renderShip);
+      clientSocket.offAny(renderShip);
+    };
+  }, [center, ship]);
 
   return (
     <canvas

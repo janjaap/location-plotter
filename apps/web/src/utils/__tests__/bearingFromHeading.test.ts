@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rotationDelta, rotationFromHeading } from '../rotationFromHeading';
+import { bearingFromHeading, rotationDelta } from '../bearingFromHeading';
 
 describe('rotationDelta', () => {
   it('should return 0 when headings are the same', () => {
@@ -47,22 +47,22 @@ describe('rotationDelta', () => {
   });
 });
 
-describe('rotationFromHeading', () => {
+describe('bearingFromHeading', () => {
   it('should return new heading when rotation delta is applied', () => {
-    expect(rotationFromHeading(0, 90)).toBe(90);
-    expect(rotationFromHeading(90, 180)).toBe(180);
-    expect(rotationFromHeading(270, 0)).toBe(360);
+    expect(bearingFromHeading(0, 90)).toBe(90);
+    expect(bearingFromHeading(90, 180)).toBe(180);
+    expect(bearingFromHeading(270, 0)).toBe(360);
   });
 
   it('should handle wraparound cases', () => {
-    expect(rotationFromHeading(350, 10)).toBe(370);
-    expect(rotationFromHeading(10, 350)).toBe(-10);
-    expect(rotationFromHeading(450, 250)).toBe(610);
+    expect(bearingFromHeading(350, 10)).toBe(370);
+    expect(bearingFromHeading(10, 350)).toBe(-10);
+    expect(bearingFromHeading(450, 250)).toBe(610);
   });
 
   it('should handle edge cases', () => {
-    expect(rotationFromHeading(0, 0)).toBe(0);
-    expect(rotationFromHeading(360, 0)).toBe(360);
-    expect(rotationFromHeading(-90, 90)).toBe(-270);
+    expect(bearingFromHeading(0, 0)).toBe(0);
+    expect(bearingFromHeading(360, 0)).toBe(360);
+    expect(bearingFromHeading(-90, 90)).toBe(-270);
   });
 });

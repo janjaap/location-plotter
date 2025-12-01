@@ -1,52 +1,54 @@
 import { useEffect, useRef, useState } from 'react';
 import { ServerEvents, type Coordinate, type PositionPayload } from 'socket/types';
-import { Canvas, zoomLevelToFactor } from '../../lib/canvas';
+import { Canvas } from '../../lib/canvas';
 import { clientSocket } from '../../lib/clientSocket';
-import { useZoom } from '../../providers/ZoomProvider/ZoomProvider';
+import { trackColor } from '../../lib/tokens';
+import { useParams } from '../../providers/ParamsProvider/ParamsProvider';
+import type { GridPoint } from '../../types';
 import { gridCoordinate } from '../../utils/gridCoordinate';
 import type { CanvasProps } from './MapCanvas';
 import styles from './MapCanvas.module.css';
 
+type ViewBox = {
+  width: number;
+  height: number;
+};
+
 export const Track = ({ center }: CanvasProps) => {
   const trackRef = useRef<SVGSVGElement>(null);
-  const { zoomLevel } = useZoom();
   const [coordinates, setCoordinates] = useState<Coordinate[]>([]);
-  const [viewBox, setViewBox] = useState<{ width: number; height: number }>();
+  const [viewBox, setViewBox] = useState<ViewBox>({ width: 0, height: 0 });
+  const { offset } = useParams();
 
-  const zoomFactor = zoomLevelToFactor(zoomLevel);
-
-  const convertPositionToGridPoint = (position: Coordinate) => {
-    if (!viewBox) return {};
-
-    const width =
-      viewBox.width - Canvas.LABEL_WIDTH - Canvas.CANVAS_PADDING - Canvas.CANVAS_PADDING;
-    const height = viewBox.height - Canvas.LABEL_HEIGHT - Canvas.CANVAS_PADDING;
-
-    const pixelsPerLongSecond = (width / Canvas.VISIBLE_SECONDS) * zoomFactor;
-    const pixelsPerLatSecond = (height / Canvas.VISIBLE_SECONDS) * zoomFactor;
+  const convertPositionToGridPoint = (position: Coordinate): GridPoint => {
+    const pixelsPerLongSecond = Canvas.PIXELS_PER_LONG_SECOND;
+    const pixelsPerLatSecond = Canvas.PIXELS_PER_LAT_SECOND;
 
     const { x, y } = gridCoordinate({
       position,
-      reference: center!,
+      reference: center,
       pixelsPerLatSecond,
       pixelsPerLongSecond,
+      offset,
     });
 
-    return { x: x + viewBox.width / 2, y: y + viewBox.height / 2 };
+    return {
+      x: x + viewBox.width / 2,
+      y: y + viewBox.height / 2,
+    };
   };
 
-  const svgPath = viewBox
-    ? coordinates.reduce(
-        (acc, position) => {
-          const { x, y } = convertPositionToGridPoint(position);
+  const pointsList = (asPath = false) =>
+    coordinates.reduce(
+      (acc, position) => {
+        const { x, y } = convertPositionToGridPoint(position);
 
-          if (!x && !y) return acc;
+        if (!x && !y) return acc;
 
-          return (acc += ` L${x} ${y}`);
-        },
-        `M${viewBox.width / 2} ${viewBox.height / 2}`,
-      )
-    : '';
+        return (acc += `${asPath ? 'L' : ' '}${x} ${y}`);
+      },
+      `${asPath ? 'M' : ''}${viewBox.width / 2 + offset.x} ${viewBox.height / 2 + offset.y}`,
+    );
 
   useEffect(() => {
     if (!trackRef.current) return;
@@ -78,7 +80,7 @@ export const Track = ({ center }: CanvasProps) => {
 
     return () => {
       clientSocket.off(ServerEvents.POSITION, setGridPoint);
-      clientSocket.off(ServerEvents.RESET, reset);
+      clientSocket.offAny(reset);
     };
   }, []);
 
@@ -86,12 +88,24 @@ export const Track = ({ center }: CanvasProps) => {
     <svg
       ref={trackRef}
       className={styles.track}
-      viewBox={`0 0 ${viewBox?.width ?? 0} ${viewBox?.height ?? 0}`}>
-      <path
-        d={svgPath}
-        stroke="red"
-        fill="transparent"
+      viewBox={`0 0 ${viewBox.width} ${viewBox.height}`}
+    >
+      <polyline
+        points={pointsList()}
+        fill="none"
+        stroke={trackColor}
+        strokeDasharray={4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
+      {/* <path
+        d={pointsList(true)}
+        stroke={trackColor}
+        fill="none"
+        strokeDasharray={4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      /> */}
     </svg>
   );
 };

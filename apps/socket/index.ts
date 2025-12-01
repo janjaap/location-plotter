@@ -13,14 +13,29 @@ import { updatePosition } from './updatePosition';
 
 const httpServer = createServer();
 const port = 5000;
+const host = 'localhost';
 const sockets = new Set<Socket>();
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
-    origin: 'http://localhost:3000',
+    preflightContinue: true,
+    origin: '*',
+    allowedHeaders: [
+      'Access-Control-Allow-Headers',
+      'X-Requested-With',
+      'X-Access-Token',
+      'Content-Type',
+      'Host',
+      'Accept',
+      'Connection',
+      'Cache-Control',
+    ],
+    credentials: true,
+    optionsSuccessStatus: 200,
   },
+  connectionStateRecovery: {},
 });
 
-export const POSITION_UPDATE_INTERVAL = 1_000; // ms
+export const POSITION_UPDATE_INTERVAL = 2_000; // ms
 const MAX_BEARING = 120; // degrees
 
 function applyRandomBearing(heading: number) {
@@ -38,7 +53,7 @@ function applyRandomBearing(heading: number) {
 
 let positionInterval: NodeJS.Timeout;
 let headingInterval: NodeJS.Timeout;
-let speedInterval: NodeJS.Timeout;
+// let speedInterval: NodeJS.Timeout;
 
 io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {
   let initialPosition: StartPositionPayload;
@@ -53,11 +68,11 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
   const cleanup = () => {
     clearInterval(positionInterval);
     clearInterval(headingInterval);
-    clearInterval(speedInterval);
+    // clearInterval(speedInterval);
   };
 
   socket
-    .on(ClientEvents.INIT, (startPosition) => {
+    .once(ClientEvents.INIT, (startPosition) => {
       const { position, heading, speed } = startPosition;
       initialPosition = startPosition;
 
@@ -83,17 +98,17 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
 
       generateNewHeading();
 
-      const generateNewSpeed = () => {
-        const speedChange = Math.floor(Math.random() * 10) - 1;
-        currentSpeed = Math.max(0, currentSpeed + speedChange);
+      // const generateNewSpeed = () => {
+      //   const speedChange = Math.floor(Math.random() * 10) - 1;
+      //   currentSpeed = Math.max(0, currentSpeed + speedChange);
 
-        console.log({ speedChange, currentSpeed });
+      //   console.log({ speedChange, currentSpeed });
 
-        clearInterval(speedInterval);
-        speedInterval = setInterval(generateNewSpeed, Math.random() * 5_000);
-      };
+      //   clearInterval(speedInterval);
+      //   speedInterval = setInterval(generateNewSpeed, Math.random() * 5_000);
+      // };
 
-      generateNewSpeed();
+      // generateNewSpeed();
 
       const emitNewHeading = () => {
         const newPosition = updatePosition(
@@ -151,7 +166,15 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     .on(ClientEvents.DISCONNECT, (reason: string) => {
       cleanup();
       console.log(`socket ${socket.id} disconnected due to ${reason}`);
+      sockets.delete(socket);
     });
+
+  // .onAnyOutgoing((event: ServerEvents, ...args: any[]) => {
+  //   console.log({ event, args });
+  // })
+}).on('disconnect', (socket) => {
+  console.log(`socket ${socket.id} disconnected.`);
+  sockets.delete(socket);
 });
 
 httpServer
@@ -160,7 +183,7 @@ httpServer
     process.exit(1);
   })
   .listen({ port }, () => {
-    console.log(`Socket.io server runs at: http://localhost:${port}`);
+    console.log(`Socket.io server runs at: http://${host}:${port}`);
   });
 
 process.on('SIGINT', () => {

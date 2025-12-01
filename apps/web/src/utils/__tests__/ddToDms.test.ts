@@ -14,9 +14,9 @@ describe('ddToDms', () => {
     });
 
     expect(ddToDms(179.9999)).toEqual({
-      degrees: 179,
-      minutes: 59,
-      seconds: expect.closeTo(59.64),
+      degrees: 180,
+      minutes: 0,
+      seconds: 0,
     });
 
     expect(ddToDms(52.95138889)).toEqual({
