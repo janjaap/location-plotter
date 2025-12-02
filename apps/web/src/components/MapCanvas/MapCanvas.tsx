@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { ServerEvents, type Coordinate, type PositionPayload } from 'socket/types';
 // import { usePinchZoom } from '../../hooks/usePinchZoom';
+import { Canvas } from '../../lib/canvas';
 import { clientSocket } from '../../lib/clientSocket';
 import { useParams } from '../../providers/ParamsProvider/ParamsProvider';
 import type { GridPoint } from '../../types';
@@ -66,6 +67,10 @@ export const MapCanvas = () => {
 
     const offsetX = baseOffsetRef.current.x + diffX;
     const offsetY = baseOffsetRef.current.y + diffY;
+
+    if (!Canvas.validOffset({ x: offsetX, y: offsetY })) {
+      return;
+    }
 
     updateOffset({ x: offsetX, y: offsetY });
   };

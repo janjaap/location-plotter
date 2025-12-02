@@ -15,6 +15,8 @@ export abstract class Canvas {
 
   static LABEL_WIDTH = 80;
 
+  static OFFSET_CLAMP = 1_024;
+
   static PIXELS_PER_LONG_SECOND = 15;
 
   static PIXELS_PER_LAT_SECOND = 13;
@@ -45,13 +47,30 @@ export abstract class Canvas {
     this.context.textRendering = 'optimizeLegibility';
   }
 
+  static validOffset(offset: GridPoint) {
+    return (
+      offset.x > -Canvas.OFFSET_CLAMP &&
+      offset.x < Canvas.OFFSET_CLAMP &&
+      offset.y > -Canvas.OFFSET_CLAMP &&
+      offset.y < Canvas.OFFSET_CLAMP
+    );
+  }
+
   get offset(): GridPoint {
     return this.translationOffset;
   }
 
-  set offset(value: GridPoint) {
+  set offset(newOffset: GridPoint) {
+    if (!Canvas.validOffset(newOffset)) {
+      return;
+    }
+
+    if (this.previousOffset.x === newOffset.x && this.previousOffset.y === newOffset.y) {
+      return;
+    }
+
     this.previousOffset = this.translationOffset;
-    this.translationOffset = value;
+    this.translationOffset = newOffset;
   }
 
   get canvasHeight() {

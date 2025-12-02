@@ -43,14 +43,10 @@ export class Grid extends Canvas {
   }
 
   set offset(newOffset: GridPoint) {
-    if (this.translationOffset.x === newOffset.x && this.translationOffset.y === newOffset.y)
-      return;
+    super.offset = newOffset;
 
-    this.previousOffset = super.offset;
-    this.translationOffset = newOffset;
-
-    this.axis.lat.offset = newOffset;
-    this.axis.long.offset = newOffset;
+    this.axis.lat.offset = this.translationOffset;
+    this.axis.long.offset = this.translationOffset;
     this.drawGrid(true);
   }
 
