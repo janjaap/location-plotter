@@ -1,11 +1,16 @@
-import type { FromTo, GridPoint } from '../types';
+import type { FromTo, GridPoint, Orientation } from '../types';
 import { SECONDS_PER_MINUTE } from '../utils/constants';
 import { coordsToDmsFormatted, ddToDms, ddToDmsFormatted } from '../utils/ddToDms';
-import { closestMinute, diffInSeconds } from '../utils/minutes';
 import { Canvas } from './canvas';
-import { centerMarkerColor, gridLabelColor, gridLineColor, subgridLabelColor } from './tokens';
-
-type Orientation = 'lat' | 'long';
+import { LatAxis } from './LatAxis';
+import { LongAxis } from './LongAxis';
+import {
+  centerMarkerColor,
+  gridBackgroundColor,
+  gridLabelColor,
+  gridLineColor,
+  subgridLabelColor,
+} from './tokens';
 
 type DrawAxisSideParams = {
   orientation: Orientation;
@@ -13,77 +18,22 @@ type DrawAxisSideParams = {
 };
 
 type DrawGridAxisParams = {
-  orientation: 'lat' | 'long';
+  orientation: Orientation;
 };
 
 export class Grid extends Canvas {
-  private ORIENTATION = {
-    lat: {
-      baseOffset: () => {
-        const closest = this.ORIENTATION.lat.getClosestMinute();
-
-        // Distance from center to nearest minute line
-        const diff = this.ORIENTATION.lat.secondsToCenter(closest);
-        return diff * this.ORIENTATION.lat.pixelsPerSecond * Math.sign(closest - this.center.lat);
-      },
-      boundsEnd: this.bounds.right * 10,
-      boundsStart: this.bounds.left * 10,
-      fitsWithinBounds: (yPos: number) => this.fitsWithinBounds(0, yPos),
-      getClosestMinute: (offset?: number) => closestMinute(this.center.lat, offset),
-      labelAlign: 'start' as CanvasTextAlign,
-      labelFitsWithinBounds: (yPos: number) =>
-        this.ORIENTATION.lat.labelY(yPos) >= this.bounds.top &&
-        this.ORIENTATION.lat.labelY(yPos) <= this.bounds.bottom - Canvas.LABEL_HEIGHT,
-      labelPosition: (pos: number) => ({
-        x: this.bounds.left - Canvas.LABEL_WIDTH,
-        y: this.withOffsetY(pos),
-      }),
-      labelX: () => this.bounds.left - Canvas.LABEL_WIDTH,
-      labelY: (pos: number) => this.withOffsetY(pos),
-      makeLineCoords: (yPos: number): FromTo => ({
-        from: { x: this.ORIENTATION.lat.boundsStart, y: yPos },
-        to: { x: this.ORIENTATION.lat.boundsEnd, y: yPos },
-      }),
-      minuteOffset: -1,
-      pixelsPerSecond: Canvas.PIXELS_PER_LAT_SECOND,
-      secondsToCenter: (decimalDegrees: number) => diffInSeconds(decimalDegrees, this.center.lat),
-      subDivSize: (Canvas.PIXELS_PER_LAT_SECOND * SECONDS_PER_MINUTE) / (this.minuteDivisions + 1),
-    },
-    long: {
-      baseOffset: () => {
-        const closest = this.ORIENTATION.long.getClosestMinute();
-
-        // Distance from center to nearest minute line
-        const diff = this.ORIENTATION.long.secondsToCenter(closest);
-        return diff * this.ORIENTATION.long.pixelsPerSecond * Math.sign(closest - this.center.long);
-      },
-      boundsEnd: this.bounds.bottom * 10,
-      boundsStart: this.bounds.top * 10,
-      fitsWithinBounds: (xPos: number) => this.fitsWithinBounds(xPos, 0),
-      getClosestMinute: (offset?: number) => closestMinute(this.center.long, offset),
-      labelFitsWithinBounds: (xPos: number) =>
-        this.ORIENTATION.long.labelX(xPos) >= this.bounds.left - Canvas.LABEL_WIDTH / 2 &&
-        this.ORIENTATION.long.labelX(xPos) <= this.bounds.right - Canvas.LABEL_WIDTH / 2,
-      labelAlign: 'center' as CanvasTextAlign,
-      labelPosition: (pos: number) => ({
-        x: this.withOffsetX(pos) - Canvas.LABEL_WIDTH / 2,
-        y: this.bounds.bottom + Canvas.CANVAS_PADDING,
-      }),
-      labelX: (pos: number) => this.withOffsetX(pos),
-      labelY: () => this.bounds.bottom + Canvas.CANVAS_PADDING,
-      makeLineCoords: (xPos: number): FromTo => ({
-        from: { x: xPos, y: this.ORIENTATION.long.boundsStart },
-        to: { x: xPos, y: this.ORIENTATION.long.boundsEnd },
-      }),
-      minuteOffset: 1,
-      pixelsPerSecond: Canvas.PIXELS_PER_LONG_SECOND,
-      secondsToCenter: (decimalDegrees: number) => diffInSeconds(decimalDegrees, this.center.long),
-      subDivSize: (Canvas.PIXELS_PER_LONG_SECOND * SECONDS_PER_MINUTE) / (this.minuteDivisions + 1),
-    },
-  } as const;
+  private readonly axis: {
+    lat: LatAxis;
+    long: LongAxis;
+  };
 
   constructor(...args: ConstructorParameters<typeof Canvas>) {
     super(...args);
+
+    this.axis = {
+      lat: new LatAxis(...args),
+      long: new LongAxis(...args),
+    };
 
     this.init();
   }
@@ -99,6 +49,8 @@ export class Grid extends Canvas {
     this.previousOffset = super.offset;
     this.translationOffset = newOffset;
 
+    this.axis.lat.offset = newOffset;
+    this.axis.long.offset = newOffset;
     this.drawGrid(true);
   }
 
@@ -178,28 +130,31 @@ export class Grid extends Canvas {
 
   private drawAxisSide({ orientation, direction }: DrawAxisSideParams) {
     const {
+      axisFitsWithinBounds,
       baseOffset,
-      fitsWithinBounds,
       getClosestMinute,
       labelFitsWithinBounds,
+      labelOrigin,
       labelPosition,
       makeLineCoords,
       pixelsPerSecond,
       subDivSize,
-    } = this.ORIENTATION[orientation];
+    } = this.axis[orientation];
 
     const pixelsPerMinute = pixelsPerSecond * SECONDS_PER_MINUTE;
-    let { minuteOffset } = this.ORIENTATION[orientation];
+    let { minuteOffset } = this.axis[orientation];
     let pos = baseOffset() + direction * pixelsPerMinute;
 
     // Main minute lines
-    while (fitsWithinBounds(pos)) {
+    while (axisFitsWithinBounds(pos)) {
       this.drawGridLine(makeLineCoords(pos));
 
-      const closestMinute = getClosestMinute(minuteOffset);
-      const lineLabel = ddToDmsFormatted(closestMinute);
+      if (labelFitsWithinBounds(pos)) {
+        const closestMinute = getClosestMinute(minuteOffset);
+        const labelText = ddToDmsFormatted(closestMinute);
 
-      this.drawLabel(lineLabel, labelPosition(pos));
+        this.drawLabel(labelText, labelPosition(pos), labelOrigin(pos));
+      }
 
       pos += direction * pixelsPerMinute;
       minuteOffset += direction;
@@ -212,20 +167,22 @@ export class Grid extends Canvas {
     const { degrees, minutes } = ddToDms(getClosestMinute());
     const secondsPerSubdivision = SECONDS_PER_MINUTE / (this.minuteDivisions + 1);
 
-    while (fitsWithinBounds(pos)) {
+    while (axisFitsWithinBounds(pos)) {
       this.drawGridSubdivisionLine(makeLineCoords(pos));
 
-      const label = this.computeSubdivisionLabel({
-        orientation,
-        direction,
-        degrees,
-        minutes,
-        index: subIndex,
-        secondsPerSubdivision,
-      });
+      if (labelFitsWithinBounds(pos)) {
+        const labelText = this.computeSubdivisionLabel({
+          orientation,
+          direction,
+          degrees,
+          minutes,
+          index: subIndex,
+          secondsPerSubdivision,
+        });
 
-      if (label && labelFitsWithinBounds(pos)) {
-        this.drawLabel(label, labelPosition(pos));
+        if (labelText) {
+          this.drawLabel(labelText, labelPosition(pos), labelOrigin(pos));
+        }
       }
 
       pos += direction * subDivSize;
@@ -234,17 +191,30 @@ export class Grid extends Canvas {
   }
 
   private drawGridAxis({ orientation }: DrawGridAxisParams) {
-    const { baseOffset, getClosestMinute, labelAlign, labelPosition, makeLineCoords } =
-      this.ORIENTATION[orientation];
+    const {
+      baseOffset,
+      getClosestMinute,
+      labelAlign,
+      labelPosition,
+      labelOrigin,
+      makeLineCoords,
+      labelFitsWithinBounds,
+    } = this.axis[orientation];
 
     const closest = getClosestMinute();
 
-    // this.context.textAlign = labelAlign;
+    this.context.textAlign = labelAlign;
 
     // Draw the main minute line
     this.drawGridLine(makeLineCoords(baseOffset()));
 
-    this.drawLabel(ddToDmsFormatted(closest), labelPosition(baseOffset()));
+    if (labelFitsWithinBounds(baseOffset())) {
+      this.drawLabel(
+        ddToDmsFormatted(closest),
+        labelPosition(baseOffset()),
+        labelOrigin(baseOffset()),
+      );
+    }
 
     // Draw outward in both directions
     this.drawAxisSide({
@@ -278,17 +248,26 @@ export class Grid extends Canvas {
     });
   }
 
-  private drawLabel(text: string, gridPoint: GridPoint) {
+  private drawLabel(text: string, gridPoint: GridPoint, origin?: GridPoint) {
     this.draw(() => {
       this.context.font = '12px system-ui';
       this.context.textBaseline = 'middle';
       this.context.fillStyle = gridLabelColor;
 
-      this.text({ text, gridPoint, clearBefore: true });
+      if (origin) {
+        this.draw(() => {
+          this.context.fillStyle = gridBackgroundColor;
+          this.context.rect(origin.x, origin.y, Canvas.LABEL_WIDTH, Canvas.LABEL_HEIGHT);
+          this.context.fill();
+        });
+      }
+
+      this.text({ text, gridPoint });
     });
   }
 
-  private fitsWithinBounds(x: number, y: number) {
+  protected fitsWithinBounds(gridPoint: GridPoint) {
+    const { x, y } = gridPoint;
     return (
       x >= this.bounds.left * 10 &&
       x <= this.bounds.right * 10 &&

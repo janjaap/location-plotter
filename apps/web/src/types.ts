@@ -8,3 +8,5 @@ export type CanvasBounds = { top: number; right: number; bottom: number; left: n
 export type GridPoint = { x: number; y: number };
 
 export type Dimensions = { width: number; height: number };
+
+export type Orientation = 'lat' | 'long';

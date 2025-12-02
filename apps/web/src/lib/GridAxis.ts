@@ -1,0 +1,52 @@
+import type { FromTo, GridPoint } from '../types';
+import { closestMinute, diffInSeconds } from '../utils/minutes';
+import { Canvas } from './canvas';
+
+const BOUNDS_MULTIPLIER = 10;
+
+export abstract class GridAxis extends Canvas {
+  abstract labelFitsWithinBounds: (xOrYpos: number) => boolean;
+  abstract labelOrigin: (pos: number) => GridPoint;
+  abstract labelPosition: (pos: number) => GridPoint;
+  abstract labelX: (pos: number) => number | (() => number);
+  abstract labelY: (pos: number) => number | (() => number);
+  abstract makeLineCoords: (xOrYpos: number) => FromTo;
+
+  protected abstract readonly degrees: number; // lat or long decimal degrees
+  protected abstract readonly minuteOffset: number;
+  protected abstract readonly pixelsPerSecond: number;
+  protected abstract readonly subDivSize: number;
+
+  protected abstract axisFitsWithinBounds(xOrYpos: number): boolean;
+
+  get axisBounds() {
+    return {
+      top: this.bounds.top * BOUNDS_MULTIPLIER,
+      right: this.bounds.right * BOUNDS_MULTIPLIER,
+      bottom: this.bounds.bottom * BOUNDS_MULTIPLIER,
+      left: this.bounds.left * BOUNDS_MULTIPLIER,
+    };
+  }
+
+  baseOffset = (offset?: number) => {
+    const closest = closestMinute(this.degrees, offset);
+
+    return this.secondsToCenter(closest) * this.pixelsPerSecond * Math.sign(closest - this.degrees);
+  };
+
+  getClosestMinute = (offset?: number) => closestMinute(this.degrees, offset);
+
+  protected secondsToCenter = (decimalDegrees: number) =>
+    diffInSeconds(decimalDegrees, this.degrees);
+
+  protected fitsWithinBounds(gridPoint: GridPoint) {
+    const { x, y } = gridPoint;
+
+    return (
+      x >= this.axisBounds.left &&
+      x <= this.axisBounds.right &&
+      y >= this.axisBounds.top &&
+      y <= this.axisBounds.bottom
+    );
+  }
+}

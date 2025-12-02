@@ -6,7 +6,6 @@ import {
   type StartPositionPayload,
 } from 'socket/types';
 import { clientSocket } from '../../lib/clientSocket';
-import { useParams } from '../../providers/ParamsProvider/ParamsProvider';
 import { ddToDmsFormatted } from '../../utils/ddToDms';
 import styles from './ParamsForm.module.css';
 
@@ -28,7 +27,6 @@ const startPosition: StartPositionPayload = {
 export const ParamsForm = () => {
   const [isTracking, setIsTracking] = useState(false);
   const [formState, setFormState] = useState<StartPositionPayload & PositionPayload>(startPosition);
-  const { zoomLevel, updateZoomLevel, resetZoomLevel } = useParams();
 
   useEffect(() => {
     const updatePosition = ({ position, distance, heading }: PositionPayload) => {
@@ -41,13 +39,11 @@ export const ParamsForm = () => {
     };
 
     clientSocket.on(ServerEvents.POSITION, updatePosition);
-    clientSocket.on(ServerEvents.RESET, resetZoomLevel);
 
     return () => {
       clientSocket.off(ServerEvents.POSITION, updatePosition);
-      clientSocket.off(ServerEvents.RESET, resetZoomLevel);
     };
-  }, [resetZoomLevel, updateZoomLevel]);
+  }, []);
 
   useEffect(() => {
     clientSocket.emit(ClientEvents.INIT, startPosition);
@@ -119,11 +115,6 @@ export const ParamsForm = () => {
 
     clientSocket.emit(ClientEvents.RESET);
     setFormState(startPosition);
-  }
-
-  function onZoomChange(event: ChangeEvent<HTMLInputElement>) {
-    const value = Number(event.target.value);
-    updateZoomLevel(value);
   }
 
   function disconnect(event: MouseEvent<HTMLButtonElement>) {
@@ -227,18 +218,6 @@ export const ParamsForm = () => {
 
       <button onClick={resetTracking}>Reset</button>
 
-      <label>
-        Zoom level ({zoomLevel})
-        <input
-          name="zoomLevel"
-          max="10"
-          min="1"
-          onChange={onZoomChange}
-          step="1"
-          type="range"
-          value={zoomLevel}
-        />
-      </label>
       <div>Distance: {formState.distance?.toFixed(0) ?? 0} meters</div>
 
       <button onClick={disconnect}>Disconnect</button>
