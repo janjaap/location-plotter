@@ -1,6 +1,6 @@
-import type { FromTo, GridPoint, Orientation } from '../types';
-import { SECONDS_PER_MINUTE } from '../utils/constants';
-import { coordsToDmsFormatted, ddToDms, ddToDmsFormatted } from '../utils/ddToDms';
+import { coordsToDmsFormatted, ddToDms, ddToDmsFormatted } from '@milgnss/utils';
+import { SECONDS_PER_MINUTE } from '@milgnss/utils/constants';
+import type { FromTo, GridPoint, Orientation } from '@milgnss/utils/types';
 import { Canvas } from './canvas';
 import { LatAxis } from './LatAxis';
 import { LongAxis } from './LongAxis';

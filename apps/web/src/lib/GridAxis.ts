@@ -1,5 +1,5 @@
-import type { FromTo, GridPoint } from '../types';
-import { closestMinute, diffInSeconds } from '../utils/minutes';
+import { closestMinute, diffInSeconds } from '@milgnss/utils';
+import type { FromTo, GridPoint } from '@milgnss/utils/types';
 import { Canvas } from './canvas';
 
 const BOUNDS_MULTIPLIER = 10;

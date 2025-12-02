@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "@milgnss/web",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,7 +12,7 @@
   "dependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "socket": "workspace:*",
+    "@milgnss/utils": "workspace:*",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {

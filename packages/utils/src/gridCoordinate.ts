@@ -1,7 +1,6 @@
-import type { Coordinate } from 'socket/types';
-import type { GridPoint } from '../types';
 import { SECONDS_PER_MINUTE } from './constants';
 import { ddToDms } from './ddToDms';
+import type { Coordinate, GridPoint } from './types';
 
 interface GridCoordinateParams {
   position: Coordinate;

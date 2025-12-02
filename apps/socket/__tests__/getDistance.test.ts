@@ -1,15 +1,10 @@
+import { dmsToDd } from '@milgnss/utils';
+import { DMS } from '@milgnss/utils/types';
 import { describe, expect, test } from 'vitest';
 import { getDistance } from '../getDistance';
-import { DMS } from '../types';
 
 const coordLat: DMS = { degrees: 52, minutes: 57, seconds: 0 };
 const coordLong: DMS = { degrees: 4, minutes: 47, seconds: 0 };
-
-const dmsToDd = (dms: DMS) => {
-  const { degrees, minutes, seconds } = dms;
-  const dd = degrees + minutes / 60 + (seconds ?? 0) / 3600;
-  return dd;
-};
 
 describe('getDistance', () => {
   describe('longitude', () => {

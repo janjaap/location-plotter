@@ -1,5 +1,4 @@
-import { type Coordinate } from 'socket/types';
-import type { CanvasBounds, FromTo, GridPoint } from '../types';
+import type { CanvasBounds, Coordinate, FromTo, GridPoint } from '@milgnss/utils/types';
 
 type TextParams = {
   text: string;

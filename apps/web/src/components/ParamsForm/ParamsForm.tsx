@@ -1,12 +1,12 @@
-import { useActionState, useEffect, useState, type ChangeEvent, type MouseEvent } from 'react';
+import { ddToDmsFormatted } from '@milgnss/utils';
 import {
   ClientEvents,
   ServerEvents,
   type PositionPayload,
   type StartPositionPayload,
-} from 'socket/types';
+} from '@milgnss/utils/types';
+import { useActionState, useEffect, useState, type ChangeEvent, type MouseEvent } from 'react';
 import { clientSocket } from '../../lib/clientSocket';
-import { ddToDmsFormatted } from '../../utils/ddToDms';
 import styles from './ParamsForm.module.css';
 
 const startPosition: StartPositionPayload = {

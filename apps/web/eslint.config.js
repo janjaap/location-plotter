@@ -1,4 +1,3 @@
-// import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -7,12 +6,7 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-// const compat = new FlatCompat();
-
 export default defineConfig([
-  // compat({
-  //   extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended'],
-  // }),
   globalIgnores(['dist']),
   {
     files: ['**/*.{ts,tsx}'],

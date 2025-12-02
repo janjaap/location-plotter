@@ -1,5 +1,5 @@
+import { ServerEvents, type PositionPayload } from '@milgnss/utils/types';
 import { useEffect, useRef, useState } from 'react';
-import { ServerEvents, type PositionPayload } from 'socket/types';
 import { clientSocket } from '../../lib/clientSocket';
 import { Ship as ShipClass } from '../../lib/Ship';
 import type { CanvasProps } from './MapCanvas';

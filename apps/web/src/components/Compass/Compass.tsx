@@ -1,7 +1,7 @@
+import { bearingFromHeading } from '@milgnss/utils';
+import { ServerEvents, type PositionPayload } from '@milgnss/utils/types';
 import { useCallback, useEffect, useState } from 'react';
-import { ServerEvents, type PositionPayload } from 'socket/types';
 import { clientSocket } from '../../lib/clientSocket';
-import { bearingFromHeading } from '../../utils/bearingFromHeading';
 import styles from './Compass.module.css';
 
 export const Compass = () => {

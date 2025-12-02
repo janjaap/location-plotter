@@ -1,10 +1,14 @@
+import {
+  ServerEvents,
+  type Coordinate,
+  type GridPoint,
+  type PositionPayload,
+} from '@milgnss/utils/types';
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
-import { ServerEvents, type Coordinate, type PositionPayload } from 'socket/types';
-// import { usePinchZoom } from '../../hooks/usePinchZoom';
+
 import { Canvas } from '../../lib/canvas';
 import { clientSocket } from '../../lib/clientSocket';
 import { useParams } from '../../providers/ParamsProvider/ParamsProvider';
-import type { GridPoint } from '../../types';
 import { Compass } from '../Compass/Compass';
 import { Duration } from '../Duration/Duration';
 import { Grid } from './Grid';

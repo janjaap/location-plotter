@@ -1,8 +1,6 @@
 {
-  "name": "socket",
+  "name": "@milgnss/socket",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
   "scripts": {
     "dev": "DEBUG=socket.io:server* pnpm dlx tsx index.ts",
     "test": "vitest ./ --config ../../vite.config.ts"
@@ -12,7 +10,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.11.0",
   "devDependencies": {
-    "add": "^2.0.6",
+    "@milgnss/utils": "workspace:*",
     "socket.io": "^4.8.1",
     "vitest": "^4.0.3"
   }

@@ -1,6 +1,3 @@
-import { createServer } from 'http';
-import { Server, type Socket } from 'socket.io';
-import { getDistance } from './getDistance';
 import {
   ClientEvents,
   ClientToServerEvents,
@@ -8,7 +5,10 @@ import {
   ServerEvents,
   ServerToClientEvents,
   StartPositionPayload,
-} from './types';
+} from '@milgnss/utils/types';
+import { createServer } from 'http';
+import { Server, type Socket } from 'socket.io';
+import { getDistance } from './getDistance';
 import { updatePosition } from './updatePosition';
 
 const httpServer = createServer();

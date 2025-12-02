@@ -1,19 +1,20 @@
-import type { DMS } from 'socket/types';
+import { MINUTES_PER_HOUR, SECONDS_PER_MINUTE } from './constants';
+import { DMS } from './types';
 
 const zeroPad = (num: number, places = 3) => String(num).padStart(places, '0');
 
 const normalizeValues = ({ degrees, minutes, seconds }: DMS): DMS => {
-  if (Math.round(seconds) >= 60) {
+  if (Math.round(seconds) >= SECONDS_PER_MINUTE) {
     seconds = 0;
     minutes += 1;
   }
 
-  if (minutes >= 60) {
+  if (minutes >= MINUTES_PER_HOUR) {
     minutes = 0;
     degrees += 1;
   }
 
-  if (seconds < 0.0001 || Math.abs(seconds - 60) < 0.0001) {
+  if (seconds < 0.0001 || Math.abs(seconds - SECONDS_PER_MINUTE) < 0.0001) {
     seconds = 0;
   }
 
@@ -28,10 +29,10 @@ const toDmsFormatted = (dms: DMS, decimalPlaces = 2) => {
 
 export const ddToDms = (decimalDegrees: number) => {
   const absolute = Math.abs(decimalDegrees);
-  const degrees = Math.floor(absolute);
-  const minutesNotTruncated = (absolute - degrees) * 60;
-  const minutes = Math.floor(minutesNotTruncated);
-  const seconds = (minutesNotTruncated - minutes) * 60;
+  const degrees = Math.trunc(absolute);
+  const minutesNotTruncated = (absolute - degrees) * SECONDS_PER_MINUTE;
+  const minutes = Math.trunc(minutesNotTruncated);
+  const seconds = (minutesNotTruncated - minutes) * SECONDS_PER_MINUTE;
 
   return normalizeValues({ degrees, minutes, seconds });
 };

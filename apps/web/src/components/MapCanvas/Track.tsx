@@ -1,11 +1,16 @@
+import { gridCoordinate } from '@milgnss/utils';
+import {
+  ServerEvents,
+  type Coordinate,
+  type GridPoint,
+  type PositionPayload,
+} from '@milgnss/utils/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ServerEvents, type Coordinate, type PositionPayload } from 'socket/types';
 import { Canvas } from '../../lib/canvas';
 import { clientSocket } from '../../lib/clientSocket';
 import { trackColor } from '../../lib/tokens';
 import { useParams } from '../../providers/ParamsProvider/ParamsProvider';
-import type { GridPoint } from '../../types';
-import { gridCoordinate } from '../../utils/gridCoordinate';
+
 import type { CanvasProps } from './MapCanvas';
 import styles from './MapCanvas.module.css';
 

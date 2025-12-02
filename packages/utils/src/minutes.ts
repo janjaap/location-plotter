@@ -1,3 +1,4 @@
+import { MINUTES_PER_HOUR, SECONDS_PER_MINUTE } from './constants';
 import { ddToDms } from './ddToDms';
 import { dmsToDd } from './dmsToDd';
 
@@ -15,10 +16,10 @@ export const closestMinute = (decimalDegrees: number, offset?: number) => {
     return decimalDegrees;
   }
 
-  if (result.seconds >= 30) {
+  if (result.seconds >= SECONDS_PER_MINUTE / 2) {
     result.minutes += 1;
 
-    if (result.minutes === 60) {
+    if (result.minutes === MINUTES_PER_HOUR) {
       result.minutes = 0;
       result.degrees += 1;
     }

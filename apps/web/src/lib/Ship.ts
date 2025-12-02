@@ -1,7 +1,5 @@
-import { type Coordinate, type PositionPayload } from 'socket/types';
-import type { GridPoint } from '../types';
-import { bearingFromHeading } from '../utils/bearingFromHeading';
-import { gridCoordinate } from '../utils/gridCoordinate';
+import { bearingFromHeading, gridCoordinate } from '@milgnss/utils';
+import { type Coordinate, type GridPoint, type PositionPayload } from '@milgnss/utils/types';
 import { Canvas } from './canvas';
 import { trackIndicatorColor } from './tokens';
 

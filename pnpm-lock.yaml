@@ -26,9 +26,9 @@ importers:
 
   apps/socket:
     devDependencies:
-      add:
-        specifier: ^2.0.6
-        version: 2.0.6
+      '@milgnss/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       socket.io:
         specifier: ^4.8.1
         version: 4.8.1
@@ -38,15 +38,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@milgnss/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       react:
         specifier: ^19.1.1
         version: 19.2.0
       react-dom:
         specifier: ^19.1.1
         version: 19.2.0(react@19.2.0)
-      socket:
-        specifier: workspace:*
-        version: link:../socket
       socket.io-client:
         specifier: ^4.8.1
         version: 4.8.1
@@ -96,6 +96,18 @@ importers:
       vite:
         specifier: ^7.1.7
         version: 7.1.10(@types/node@24.7.2)
+
+  packages/utils:
+    devDependencies:
+      '@milgnss/socket':
+        specifier: workspace:*
+        version: link:../../apps/socket
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.3
+        version: 4.0.3(@types/node@24.7.2)(jsdom@27.2.0)
 
 packages:
 
@@ -734,9 +746,6 @@ packages:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-
-  add@2.0.6:
-    resolution: {integrity: sha512-j5QzrmsokwWWp6kUcJQySpbG+xfOBqqKnup3OIk1pz+kB/80SLorZ9V8zHFLO92Lcd+hbvq8bT+zOGoPkmBV0Q==}
 
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
@@ -2188,8 +2197,6 @@ snapshots:
       acorn: 8.15.0
 
   acorn@8.15.0: {}
-
-  add@2.0.6: {}
 
   agent-base@7.1.4: {}
 

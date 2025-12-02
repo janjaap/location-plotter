@@ -1,5 +1,5 @@
-import type { FromTo } from '../types';
-import { SECONDS_PER_MINUTE } from '../utils/constants';
+import { SECONDS_PER_MINUTE } from '@milgnss/utils/constants';
+import type { FromTo } from '@milgnss/utils/types';
 import { Canvas } from './canvas';
 import { GridAxis } from './GridAxis';
 

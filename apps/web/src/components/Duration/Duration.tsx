@@ -1,5 +1,5 @@
+import { ServerEvents } from '@milgnss/utils/types';
 import { useEffect, useState } from 'react';
-import { ServerEvents } from 'socket/types';
 import { clientSocket } from '../../lib/clientSocket';
 import styles from './Duration.module.css';
 

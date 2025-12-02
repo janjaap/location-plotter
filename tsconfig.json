@@ -27,11 +27,19 @@
         "name": "next"
       }
     ],
-    "incremental": true
+    "incremental": true,
+    "paths": {
+      "@milgnss/utils/*": [
+        "packages/utils/src/*"
+      ],
+      "@milgnss/socket/*": [
+        "apps/socket/src/*"
+      ],
+      "@milgnss/web/*": [
+        "apps/web/src/*"
+      ]
+    }
   },
-  "include": [
-    "tsconfig.json"
-  ],
   "exclude": [
     "node_modules"
   ]

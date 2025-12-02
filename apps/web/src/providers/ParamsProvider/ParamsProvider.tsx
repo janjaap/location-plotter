@@ -1,5 +1,5 @@
+import type { GridPoint } from '@milgnss/utils/types';
 import { createContext, useContext, useState, type PropsWithChildren } from 'react';
-import type { GridPoint } from '../../types';
 
 type BaseContext = {
   offset: GridPoint;
