@@ -9,7 +9,6 @@ const DIRTY_REGION_RADIUS = 42;
 
 export class Ship extends Canvas {
   private heading: number | undefined;
-  // private position: Coordinate | undefined;
 
   constructor(...args: ConstructorParameters<typeof Canvas>) {
     super(...args);
@@ -17,25 +16,9 @@ export class Ship extends Canvas {
     this.init();
   }
 
-  // get zoom() {
-  //   return super.zoom;
-  // }
-
-  // set zoom(zoomLevel: number) {
-  //   super.zoom = zoomLevel;
-
-  //   this.resetOwnPosition();
-  // }
-
   private init() {
     this.centerContext();
   }
-
-  // private resetOwnPosition = () => {
-  //   if (!this.position || !this.heading) return;
-
-  //   this.renderCurrentPosition({ position: this.position, heading: this.heading });
-  // };
 
   renderCurrentPosition = ({ position, heading, speed }: PositionPayload) => {
     const bearing = bearingFromHeading(this.heading ?? heading, heading);
@@ -82,7 +65,6 @@ export class Ship extends Canvas {
     });
 
     this.heading = heading;
-    // this.position = position;
   };
 
   private getGridCoordinate(position: Coordinate): GridPoint {

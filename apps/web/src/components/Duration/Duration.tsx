@@ -43,9 +43,9 @@ export const Duration = () => {
     clientSocket.on(ServerEvents.RESET, reset);
 
     return () => {
-      clientSocket.offAny(stop);
-      clientSocket.offAny(start);
-      clientSocket.offAny(reset);
+      clientSocket.off(ServerEvents.STOPPED, stop);
+      clientSocket.off(ServerEvents.POSITION, start);
+      clientSocket.off(ServerEvents.RESET, reset);
       clearInterval(durationInterval);
     };
   }, []);

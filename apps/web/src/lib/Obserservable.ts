@@ -32,7 +32,5 @@ export class Observable extends Canvas {
 
   teardown() {
     this.observer?.disconnect();
-
-    // super.teardown();
   }
 }
