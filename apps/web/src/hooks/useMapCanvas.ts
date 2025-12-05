@@ -1,6 +1,6 @@
 import { type GridPoint } from '@milgnss/utils/types';
 import { useRef, useState, type MouseEvent, type RefObject } from 'react';
-import { Canvas } from '../lib/canvas';
+import { Canvas } from '../lib/Canvas';
 import { useParams } from '../providers/ParamsProvider/ParamsProvider';
 
 interface Props {

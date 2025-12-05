@@ -1,4 +1,4 @@
-import { Canvas } from './canvas';
+import { Canvas } from './Canvas';
 
 export class Observable extends Canvas {
   protected canvas: HTMLCanvasElement;

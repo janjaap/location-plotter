@@ -1,6 +1,6 @@
 import { SECONDS_PER_MINUTE } from '@milgnss/utils/constants';
 import type { FromTo } from '@milgnss/utils/types';
-import { Canvas } from './canvas';
+import { Canvas } from './Canvas';
 import { GridAxis } from './GridAxis';
 
 export class LatAxis extends GridAxis {

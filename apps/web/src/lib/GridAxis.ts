@@ -1,6 +1,6 @@
 import { closestMinute, diffInSeconds } from '@milgnss/utils';
 import type { FromTo, GridPoint } from '@milgnss/utils/types';
-import { Canvas } from './canvas';
+import { Canvas } from './Canvas';
 
 const BOUNDS_MULTIPLIER = 10;
 

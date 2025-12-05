@@ -1,7 +1,7 @@
 import { coordsToDmsFormatted, ddToDms, ddToDmsFormatted } from '@milgnss/utils';
 import { SECONDS_PER_MINUTE } from '@milgnss/utils/constants';
 import type { FromTo, GridPoint, Orientation } from '@milgnss/utils/types';
-import { Canvas } from './canvas';
+import { Canvas } from './Canvas';
 import { LatAxis } from './LatAxis';
 import { LongAxis } from './LongAxis';
 import {

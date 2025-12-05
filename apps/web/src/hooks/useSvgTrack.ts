@@ -6,7 +6,7 @@ import {
 } from '@milgnss/utils/types';
 import { useCallback, useEffect, useState } from 'react';
 import { gridCoordinate } from '../../../../packages/utils/src/gridCoordinate';
-import { Canvas } from '../lib/canvas';
+import { Canvas } from '../lib/Canvas';
 import { clientSocket } from '../lib/clientSocket';
 import { useParams } from '../providers/ParamsProvider/ParamsProvider';
 import { useCenter } from './useCenter';

@@ -1,6 +1,6 @@
 import { bearingFromHeading, gridCoordinate } from '@milgnss/utils';
 import { type Coordinate, type GridPoint, type PositionPayload } from '@milgnss/utils/types';
-import { Canvas } from './canvas';
+import { Canvas } from './Canvas';
 import { trackIndicatorColor } from './tokens';
 
 const OUTER_CIRCLE_RADIUS = 14;
