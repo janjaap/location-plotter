@@ -6,6 +6,19 @@ import { ParamsForm } from './components/ParamsForm/ParamsForm';
 import { ParamsProvider } from './providers/ParamsProvider/ParamsProvider';
 
 function App() {
+  // useEffect(() => {
+  //   const preventContextMenu = (event: MouseEvent) => {
+  //     event.preventDefault();
+  //     return false;
+  //   };
+
+  //   document.addEventListener('contextmenu', preventContextMenu);
+
+  //   return () => {
+  //     document.removeEventListener('contextmenu', preventContextMenu);
+  //   };
+  // }, []);
+
   return (
     <main>
       <DisconnectionWarning />

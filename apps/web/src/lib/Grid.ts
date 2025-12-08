@@ -21,6 +21,15 @@ type DrawGridAxisParams = {
   orientation: Orientation;
 };
 
+type ComputeSubdivisionLabelParams = {
+  orientation: Orientation;
+  direction: 1 | -1;
+  degrees: number;
+  minutes: number;
+  index: number;
+  secondsPerSubdivision: number;
+};
+
 export class Grid extends Canvas {
   private readonly axis: {
     lat: LatAxis;
@@ -45,33 +54,33 @@ export class Grid extends Canvas {
   set offset(newOffset: GridPoint) {
     super.offset = newOffset;
 
-    this.axis.lat.offset = this.translationOffset;
-    this.axis.long.offset = this.translationOffset;
-    this.drawGrid(true);
+    this.axis.lat.offset = super.offset;
+    this.axis.long.offset = super.offset;
+    this.render(true);
   }
 
   private init() {
     this.centerContext();
-    this.drawGrid();
+    this.render();
   }
 
-  drawGrid = (performFullReset = false) => {
+  render = (performFullReset = false) => {
     if (performFullReset) {
       this.reset();
     }
 
-    this.drawGridAxis({
+    this.renderGridAxis({
       orientation: 'lat',
     });
 
-    this.drawGridAxis({
+    this.renderGridAxis({
       orientation: 'long',
     });
 
-    this.drawCenterMarker();
+    this.renderCenterMarker();
   };
 
-  private drawCenterMarker() {
+  private renderCenterMarker() {
     const markerRadius = 10;
     const markerLineWidth = 1;
 
@@ -92,14 +101,7 @@ export class Grid extends Canvas {
     minutes,
     index,
     secondsPerSubdivision,
-  }: {
-    orientation: Orientation;
-    direction: 1 | -1;
-    degrees: number;
-    minutes: number;
-    index: number;
-    secondsPerSubdivision: number;
-  }) {
+  }: ComputeSubdivisionLabelParams) {
     let seconds = secondsPerSubdivision * index * direction;
 
     const invert =
@@ -124,7 +126,7 @@ export class Grid extends Canvas {
     return coordsToDmsFormatted({ degrees, minutes: minutes + minutesAdj, seconds }, 0);
   }
 
-  private drawAxisSide({ orientation, direction }: DrawAxisSideParams) {
+  private renderAxisSide({ orientation, direction }: DrawAxisSideParams) {
     const {
       axisFitsWithinBounds,
       baseOffset,
@@ -143,13 +145,13 @@ export class Grid extends Canvas {
 
     // Main minute lines
     while (axisFitsWithinBounds(pos)) {
-      this.drawGridLine(makeLineCoords(pos));
+      this.renderGridLine(makeLineCoords(pos));
 
       if (labelFitsWithinBounds(pos)) {
         const closestMinute = getClosestMinute(minuteOffset);
         const labelText = ddToDmsFormatted(closestMinute);
 
-        this.drawLabel(labelText, labelPosition(pos), labelOrigin(pos));
+        this.renderLabel(labelText, labelPosition(pos), labelOrigin(pos));
       }
 
       pos += direction * pixelsPerMinute;
@@ -164,7 +166,7 @@ export class Grid extends Canvas {
     const secondsPerSubdivision = SECONDS_PER_MINUTE / (this.minuteDivisions + 1);
 
     while (axisFitsWithinBounds(pos)) {
-      this.drawGridSubdivisionLine(makeLineCoords(pos));
+      this.renderGridSubdivisionLine(makeLineCoords(pos));
 
       if (labelFitsWithinBounds(pos)) {
         const labelText = this.computeSubdivisionLabel({
@@ -177,7 +179,7 @@ export class Grid extends Canvas {
         });
 
         if (labelText) {
-          this.drawLabel(labelText, labelPosition(pos), labelOrigin(pos));
+          this.renderLabel(labelText, labelPosition(pos), labelOrigin(pos));
         }
       }
 
@@ -186,7 +188,7 @@ export class Grid extends Canvas {
     }
   }
 
-  private drawGridAxis({ orientation }: DrawGridAxisParams) {
+  private renderGridAxis({ orientation }: DrawGridAxisParams) {
     const {
       baseOffset,
       getClosestMinute,
@@ -202,10 +204,10 @@ export class Grid extends Canvas {
     this.context.textAlign = labelAlign;
 
     // Draw the main minute line
-    this.drawGridLine(makeLineCoords(baseOffset()));
+    this.renderGridLine(makeLineCoords(baseOffset()));
 
     if (labelFitsWithinBounds(baseOffset())) {
-      this.drawLabel(
+      this.renderLabel(
         ddToDmsFormatted(closest),
         labelPosition(baseOffset()),
         labelOrigin(baseOffset()),
@@ -213,18 +215,18 @@ export class Grid extends Canvas {
     }
 
     // Draw outward in both directions
-    this.drawAxisSide({
+    this.renderAxisSide({
       orientation,
       direction: +1,
     });
 
-    this.drawAxisSide({
+    this.renderAxisSide({
       orientation,
       direction: -1,
     });
   }
 
-  private drawGridLine({ from, to }: FromTo) {
+  private renderGridLine({ from, to }: FromTo) {
     this.drawInBackground(() => {
       this.context.lineWidth = 1;
       this.context.strokeStyle = gridLineColor;
@@ -233,7 +235,7 @@ export class Grid extends Canvas {
     });
   }
 
-  private drawGridSubdivisionLine({ from, to }: FromTo) {
+  private renderGridSubdivisionLine({ from, to }: FromTo) {
     this.drawInBackground(() => {
       this.context.lineWidth = 0.5;
       this.context.strokeStyle = subgridLabelColor;
@@ -244,7 +246,7 @@ export class Grid extends Canvas {
     });
   }
 
-  private drawLabel(text: string, gridPoint: GridPoint, origin?: GridPoint) {
+  private renderLabel(text: string, gridPoint: GridPoint, origin?: GridPoint) {
     this.draw(() => {
       this.context.font = '12px system-ui';
       this.context.textBaseline = 'middle';

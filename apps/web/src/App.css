@@ -1,12 +1,7 @@
-:root {
-  --color-red: #f0000;
-  --elevation-sunken-z: 100;
-  --elevation-default-z: 200;
-  --elevation-raised-z: 300;
-  --elevation-overlay-z: 400;
-  --elevation-overflow-z: 500;
+@import url('./tokens.css');
 
-  background-color: #242424;
+:root {
+  background-color: var(--color-page-background);
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
@@ -34,4 +29,32 @@ main {
   gap: 1rem;
   grid-template-columns: 12rem auto;
   padding: 1rem 1rem 0;
+}
+
+button {
+  background-color: var(--color-button-background);
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  font-family: inherit;
+  font-size: 1em;
+  font-weight: 500;
+  padding: 0.6em 1.2em;
+  transition: border-color 0.25s;
+}
+
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+button:disabled {
+  cursor: default
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+button:not(:disabled):hover {
+  border-color: #646cff;
 }

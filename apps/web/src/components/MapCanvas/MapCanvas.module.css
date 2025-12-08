@@ -3,7 +3,6 @@
   --canvas-height: 600px;
 }
 
-
 .mapCanvas {
   height: var(--canvas-height);
   position: relative;

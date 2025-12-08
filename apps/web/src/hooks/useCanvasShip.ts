@@ -1,37 +1,43 @@
 import { ServerEvents, type PositionPayload } from '@milgnss/utils/types';
+import { useParams } from '@providers/ParamsProvider/ParamsProvider';
 import { useEffect, useState } from 'react';
 import { Ship as ShipClass } from '../lib/Ship';
 import { clientSocket } from '../lib/clientSocket';
 import type { UseCanvasProps } from '../types';
-import { useCenter } from './useCenter';
 
 export const useCanvasShip = ({ canvasRef }: UseCanvasProps) => {
   const [ship, setShip] = useState<ShipClass | null>(null);
-  const center = useCenter();
+  const { offset } = useParams();
 
   useEffect(() => {
-    if (!canvasRef.current || ship || !center) return;
+    if (!ship || (!offset.x && !offset.y)) return;
 
-    const shipInstance = new ShipClass(center, canvasRef.current);
-
-    setShip(shipInstance);
-  }, [canvasRef, center, center?.lat, center?.long, ship]);
+    ship.offset = offset;
+  }, [ship, offset]);
 
   useEffect(() => {
+    const initShip = ({ position, heading }: PositionPayload) => {
+      if (!canvasRef.current) return;
+
+      const shipInstance = new ShipClass(heading, position, canvasRef.current);
+
+      setShip(shipInstance);
+    };
+
     const renderShip = ({ position, heading, speed }: PositionPayload) => {
       if (!ship) return;
 
-      ship.renderCurrentPosition({ position, heading, speed });
+      ship.render({ position, heading, speed });
     };
 
-    clientSocket.on(ServerEvents.INIT, renderShip);
+    clientSocket.on(ServerEvents.INIT, initShip);
     clientSocket.on(ServerEvents.POSITION, renderShip);
     clientSocket.on(ServerEvents.RESET, renderShip);
 
     return () => {
-      clientSocket.off(ServerEvents.INIT, renderShip);
+      clientSocket.off(ServerEvents.INIT, initShip);
       clientSocket.off(ServerEvents.POSITION, renderShip);
       clientSocket.off(ServerEvents.RESET, renderShip);
     };
-  }, [center, ship]);
+  }, [canvasRef, ship]);
 };

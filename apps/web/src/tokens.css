@@ -1,0 +1,17 @@
+:root {
+  --color-page-background: #242424;
+  --color-button-background: #1a1a1a;
+  --color-grid-background: #16191d;
+  --color-grid-line: #424548;
+  --color-track: #99c4dc;
+  --color-track-indicator: #99c4dc;
+  --color-center-marker: #f00;
+  --color-grid-label: #6f7275;
+  --color-subgrid-label: #414447;
+  --color-red: #f00;
+  --elevation-sunken-z: 100;
+  --elevation-default-z: 200;
+  --elevation-raised-z: 300;
+  --elevation-overlay-z: 400;
+  --elevation-overflow-z: 500;
+}

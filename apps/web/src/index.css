@@ -61,8 +61,7 @@
     max-inline-size: 100%;
   }
 
-  /* fix the feature of 'hidden' attribute.
-   display:revert; revert to element instead of attribute */
+  /* fix the feature of 'hidden' attribute.display:revert; revert to element instead of attribute */
   :where([hidden]) {
     display: none;
   }

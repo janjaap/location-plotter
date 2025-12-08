@@ -9,8 +9,8 @@ export const Track = () => {
 
   const {
     viewBox,
-    // points,
-    path,
+    points,
+    // path,
   } = useSvgTrack({ svgRef });
 
   return (
@@ -19,22 +19,22 @@ export const Track = () => {
       className={styles.track}
       viewBox={`0 0 ${viewBox.width} ${viewBox.height}`}
     >
-      {/* <polyline
+      <polyline
         points={points}
         fill="none"
         stroke={trackColor}
         strokeDasharray={4}
         strokeLinecap="round"
         strokeLinejoin="round"
-      /> */}
-      <path
+      />
+      {/* <path
         d={path}
         stroke={trackColor}
         fill="none"
         strokeDasharray={4}
         strokeLinecap="round"
         strokeLinejoin="round"
-      />
+      /> */}
     </svg>
   );
 };

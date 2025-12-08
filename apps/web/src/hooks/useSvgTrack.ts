@@ -5,7 +5,7 @@ import {
   type GridPoint,
   type PositionPayload,
 } from '@milgnss/utils/types';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { clientSocket } from '../lib/clientSocket';
 import { useParams } from '../providers/ParamsProvider/ParamsProvider';
 import { useCenter } from './useCenter';
@@ -43,6 +43,11 @@ export const useSvgTrack = ({ svgRef }: Props) => {
     [center, offset, viewBox.height, viewBox.width],
   );
 
+  const gridStartPoint: GridPoint = useMemo(
+    () => (center ? convertPositionToGridPoint(center) : { x: offset.x, y: offset.y }),
+    [center, convertPositionToGridPoint, offset.x, offset.y],
+  );
+
   const pointsList = useCallback(
     (asPath = false) =>
       coordinates.reduce(
@@ -53,9 +58,9 @@ export const useSvgTrack = ({ svgRef }: Props) => {
 
           return (acc += `${asPath ? 'L' : ' '}${x} ${y}`);
         },
-        `${asPath ? 'M' : ''}${viewBox.width / 2} ${viewBox.height / 2}`,
+        `${asPath ? 'M' : ''}${gridStartPoint.x} ${gridStartPoint.y}`,
       ),
-    [convertPositionToGridPoint, coordinates, viewBox.height, viewBox.width],
+    [coordinates, gridStartPoint.x, gridStartPoint.y, convertPositionToGridPoint],
   );
 
   useEffect(() => {

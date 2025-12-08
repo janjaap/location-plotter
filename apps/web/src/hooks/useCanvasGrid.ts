@@ -25,12 +25,10 @@ export const useCanvasGrid = ({ canvasRef }: UseCanvasProps) => {
   }, [grid, offset]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
-
     const reset = () => {
       if (!grid) return;
 
-      grid.drawGrid(true);
+      grid.render(true);
     };
 
     clientSocket.on(ServerEvents.RESET, reset);
@@ -38,5 +36,5 @@ export const useCanvasGrid = ({ canvasRef }: UseCanvasProps) => {
     return () => {
       clientSocket.off(ServerEvents.RESET, reset);
     };
-  }, [grid, canvasRef]);
+  }, [grid]);
 };

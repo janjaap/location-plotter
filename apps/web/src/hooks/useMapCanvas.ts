@@ -52,8 +52,6 @@ export const useMapCanvas = ({ containerRef }: Props) => {
     const diffX = x - dragStart.x;
     const diffY = y - dragStart.y;
 
-    if (diffX === 0 && diffY === 0) return;
-
     const offsetX = baseOffsetRef.current.x + diffX;
     const offsetY = baseOffsetRef.current.y + diffY;
 

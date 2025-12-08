@@ -8,76 +8,33 @@
   position: absolute;
   transition: left 0.2s ease-in-out;
   z-index: var(--elevation-overlay-z);
+
+  label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.9rem;
+    text-align: left;
+  }
+
+  input {
+    flex: 1;
+    padding: 0.5em;
+  }
+
+  [type='submit'] {
+    flex: 1 0 auto;
+  }
 }
 
 .toggle {
   border-radius: 0;
   padding: 0.5rem;
   position: absolute;
-  right: -3.8rem;
+  right: -4.5rem;
   top: 0;
 }
 
 .paramsForm:focus-within {
   left: 1rem;
   transition: left 0.2s ease-in-out;
-
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.9rem;
-  text-align: left;
-}
-
-input {
-  flex: 1;
-  padding: 0.5em;
-}
-
-[type='submit'] {
-  flex: 1 0 auto;
-}
-
-button {
-  background-color: #1a1a1a;
-  border: 1px solid transparent;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 1em;
-  font-weight: 500;
-  padding: 0.6em 1.2em;
-  transition: border-color 0.25s;
-
-  &.small {
-    border-radius: 0.25rem;
-    font-size: 0.9em;
-    padding: 0.4em 0.8em;
-  }
-}
-
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-button:not(:disabled):hover {
-  border-color: #646cff;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    background-color: #fff;
-    color: #213547;
-  }
-
-  a:hover {
-    color: #747bff;
-  }
-
-  button {
-    background-color: #f9f9f9;
-  }
 }

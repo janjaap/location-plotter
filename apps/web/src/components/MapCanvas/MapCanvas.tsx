@@ -2,6 +2,7 @@ import { type Coordinate } from '@milgnss/utils/types';
 import { useRef } from 'react';
 
 import { MobDirection } from '@components/MobDirection/MobDirection';
+import { Zoom } from '@components/Zoom/Zoom';
 import { useMapCanvas } from '../../hooks/useMapCanvas';
 import { Compass } from '../Compass/Compass';
 import { Duration } from '../Duration/Duration';
@@ -29,6 +30,7 @@ export const MapCanvas = () => {
       <MobDirection />
       <Compass />
       <Duration />
+      <Zoom />
       <Grid />
       <Track />
       <Ship />
