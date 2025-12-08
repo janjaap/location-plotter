@@ -1,13 +1,14 @@
 import { type Coordinate } from '@milgnss/utils/types';
 import { useRef } from 'react';
 
+import { MobDirection } from '@components/MobDirection/MobDirection';
 import { useMapCanvas } from '../../hooks/useMapCanvas';
 import { Compass } from '../Compass/Compass';
 import { Duration } from '../Duration/Duration';
-import { Grid } from './Grid';
+import { Grid } from '../Grid/Grid';
+import { Ship } from '../Ship/Ship';
+import { Track } from '../Track/Track';
 import styles from './MapCanvas.module.css';
-import { Ship } from './Ship';
-import { Track } from './Track';
 
 export type CanvasProps = {
   center: Coordinate;
@@ -19,20 +20,18 @@ export const MapCanvas = () => {
 
   return (
     <div
-      className={styles.canvasContainer}
+      className={styles.mapCanvas}
+      onMouseDown={onDragStart}
+      onMouseMove={onDrag}
+      onMouseUp={onDragEnd}
       ref={containerRef}
     >
-      <div
-        onMouseDown={onDragStart}
-        onMouseMove={onDrag}
-        onMouseUp={onDragEnd}
-      >
-        <Compass />
-        <Duration />
-        <Grid />
-        <Track />
-        <Ship />
-      </div>
+      <MobDirection />
+      <Compass />
+      <Duration />
+      <Grid />
+      <Track />
+      <Ship />
     </div>
   );
 };

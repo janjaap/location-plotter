@@ -7,12 +7,13 @@
     "dev": "DEBUG=socket.io:client* vite --host --port 3000 --force",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "stylelint": "stylelint '**/*.css'",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@milgnss/utils": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "@milgnss/utils": "workspace:*",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
@@ -28,6 +29,9 @@
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
     "jsdom": "^27.1.0",
+    "stylelint": "^16.26.1",
+    "stylelint-config-alphabetical-order": "^1.0.0",
+    "stylelint-config-standard": "^39.0.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
     "vite": "^7.1.7"

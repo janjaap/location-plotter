@@ -16,10 +16,6 @@ export abstract class Canvas {
 
   static OFFSET_CLAMP = 1_024;
 
-  static PIXELS_PER_LONG_SECOND = 15;
-
-  static PIXELS_PER_LAT_SECOND = 13;
-
   protected canvas: HTMLCanvasElement;
 
   protected center: Coordinate;

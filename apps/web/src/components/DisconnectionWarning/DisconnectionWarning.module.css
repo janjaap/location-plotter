@@ -1,9 +1,9 @@
 .warning {
+  background-color: crimson;
+  border: 1px solid brown;
+  padding: 0.3125rem;
   position: absolute;
   top: 0.625rem;
   width: auto;
-  padding: 0.3125rem;
-  background-color: crimson;
-  border: 1px solid brown;
   z-index: var(--elevation-overlay-z);
 }

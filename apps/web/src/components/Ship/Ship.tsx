@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCanvasShip } from '../../hooks/useCanvasShip';
-import styles from './MapCanvas.module.css';
+import styles from './Ship.module.css';
 
 export const Ship = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

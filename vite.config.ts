@@ -2,6 +2,7 @@
 import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
+
 export default defineConfig({
   test: {
     globals: true,
@@ -11,9 +12,6 @@ export default defineConfig({
   build: {
     target: 'esnext',
     sourcemap: true,
-  },
-  worker: {
-    format: 'es',
   },
   optimizeDeps: {},
 });

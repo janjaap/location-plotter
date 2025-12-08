@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { trackColor } from '../../lib/tokens';
 
 import { useSvgTrack } from '../../hooks/useSvgTrack';
-import styles from './MapCanvas.module.css';
+import styles from './Track.module.css';
 
 export const Track = () => {
   const svgRef = useRef<SVGSVGElement>(null);

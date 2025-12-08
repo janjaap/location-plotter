@@ -1,3 +1,4 @@
+import { gridCoordinate } from '@milgnss/utils';
 import {
   ServerEvents,
   type Coordinate,
@@ -5,8 +6,6 @@ import {
   type PositionPayload,
 } from '@milgnss/utils/types';
 import { useCallback, useEffect, useState } from 'react';
-import { gridCoordinate } from '../../../../packages/utils/src/gridCoordinate';
-import { Canvas } from '../lib/Canvas';
 import { clientSocket } from '../lib/clientSocket';
 import { useParams } from '../providers/ParamsProvider/ParamsProvider';
 import { useCenter } from './useCenter';
@@ -30,14 +29,9 @@ export const useSvgTrack = ({ svgRef }: Props) => {
     (position: Coordinate): GridPoint => {
       if (!center) return { x: 0, y: 0 };
 
-      const pixelsPerLongSecond = Canvas.PIXELS_PER_LONG_SECOND;
-      const pixelsPerLatSecond = Canvas.PIXELS_PER_LAT_SECOND;
-
       const { x, y } = gridCoordinate({
         position,
         reference: center,
-        pixelsPerLatSecond,
-        pixelsPerLongSecond,
         offset,
       });
 

@@ -1,4 +1,4 @@
-import { SECONDS_PER_MINUTE } from '@milgnss/utils/constants';
+import { PIXELS_PER_LAT_SECOND, SECONDS_PER_MINUTE } from '@milgnss/utils/constants';
 import type { FromTo } from '@milgnss/utils/types';
 import { Canvas } from './Canvas';
 import { GridAxis } from './GridAxis';
@@ -6,7 +6,7 @@ import { GridAxis } from './GridAxis';
 export class LatAxis extends GridAxis {
   labelAlign = 'start' as CanvasTextAlign;
   minuteOffset = -1;
-  pixelsPerSecond = Canvas.PIXELS_PER_LAT_SECOND;
+  pixelsPerSecond = PIXELS_PER_LAT_SECOND;
   subDivSize = (this.pixelsPerSecond * SECONDS_PER_MINUTE) / (this.minuteDivisions + 1);
 
   protected degrees = this.center.lat;

@@ -71,8 +71,6 @@ export class Ship extends Canvas {
     return gridCoordinate({
       position,
       reference: this.center,
-      pixelsPerLatSecond: Canvas.PIXELS_PER_LAT_SECOND,
-      pixelsPerLongSecond: Canvas.PIXELS_PER_LONG_SECOND,
       offset: super.offset,
     });
   }

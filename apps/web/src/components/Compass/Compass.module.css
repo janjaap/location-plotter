@@ -9,46 +9,46 @@
   border-radius: 50%;
   display: block;
   height: calc(2 * var(--needle-height));
-  position: absolute;
   left: 0.625rem;
+  padding-top: env(safe-area-inset-top);
+  position: absolute;
   top: var(--needle-height);
   width: calc(2 * var(--needle-height));
   z-index: var(--elevation-overlay-z);
-  padding-top: env(safe-area-inset-top);
 }
 
 .compass::before {
   content: 'N';
+  font-size: 0.8rem;
   position: absolute;
+  text-align: center;
   top: calc(-1 * var(--needle-height));
   width: calc(2 * var(--needle-height));
-  text-align: center;
-  font-size: 0.8rem;
 }
 
 .needle {
+  height: calc(2 * var(--needle-height));
+  left: calc(var(--needle-height) - (var(--needle-width) / 2) - 0.125rem);
   position: absolute;
   transform-origin: center;
   transition: transform 0.2s ease-in-out;
-  left: calc(var(--needle-height) - (var(--needle-width) / 2) - 0.125rem);
   width: var(--needle-width);
-  height: calc(2 * var(--needle-height));
 }
 
 .needle::before {
-  content: '';
-  position: absolute;
+  border-bottom: var(--needle-height) solid #ef5052;
   border-left: var(--needle-width) solid transparent;
   border-right: var(--needle-width) solid transparent;
-  border-bottom: var(--needle-height) solid #ef5052;
+  content: '';
+  position: absolute;
 }
 
 .needle::after {
+  border-bottom: var(--needle-height) solid #fff;
+  border-left: var(--needle-width) solid transparent;
+  border-right: var(--needle-width) solid transparent;
   content: '';
   position: absolute;
   top: var(--needle-height);
-  border-left: var(--needle-width) solid transparent;
-  border-right: var(--needle-width) solid transparent;
-  border-bottom: var(--needle-height) solid #fff;
   transform: rotateZ(180deg);
 }

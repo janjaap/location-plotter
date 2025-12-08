@@ -3,40 +3,10 @@
   --canvas-height: 600px;
 }
 
-canvas {
+
+.mapCanvas {
   height: var(--canvas-height);
-  image-rendering: crisp-edges;
-  inset: 0;
-  margin: 0;
-  position: absolute;
-  width: var(--canvas-width);
-}
-
-
-.canvasContainer {
   position: relative;
   width: var(--canvas-width);
-  height: var(--canvas-height);
   z-index: var(--elevation-sunken-z);
-
-  &>div {
-    position: absolute;
-    inset: 0;
-  }
-}
-
-.grid {
-  background-color: #16191d;
-  z-index: var(--elevation-default-z);
-}
-
-.ship {
-  z-index: var(--elevation-raised-z);
-}
-
-.track {
-  position: absolute;
-  width: var(--canvas-width);
-  height: var(--canvas-height);
-  z-index: var(--elevation-overlay-z);
 }

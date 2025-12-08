@@ -1,13 +1,13 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  background-color: #242424;
-
   --color-red: #f0000;
   --elevation-sunken-z: 100;
   --elevation-default-z: 200;
   --elevation-raised-z: 300;
   --elevation-overlay-z: 400;
   --elevation-overflow-z: 500;
+
+  background-color: #242424;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
 html,
@@ -24,12 +24,12 @@ html {
 }
 
 #root {
-  max-width: 90cqw;
   margin: 0 auto;
+  max-width: 90cqw;
 }
 
 main {
-  color: rgba(255, 255, 255, 0.87);
+  color: rgb(255 255 255 / 87%);
   display: grid;
   gap: 1rem;
   grid-template-columns: 12rem auto;

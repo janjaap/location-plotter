@@ -1,9 +1,9 @@
 .duration {
-  position: absolute;
-  top: 0.625rem;
-  right: 0.625rem;
+  background-color: rgb(0 0 0 / 50%);
   font-size: 1.2rem;
-  background-color: rgba(0, 0, 0, 0.5);
   padding: .5rem 1rem;
+  position: absolute;
+  right: 0.625rem;
+  top: 0.625rem;
   z-index: var(--elevation-overlay-z);
 }

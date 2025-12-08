@@ -1,0 +1,6 @@
+.track {
+  height: var(--canvas-height);
+  position: absolute;
+  width: var(--canvas-width);
+  z-index: var(--elevation-overlay-z);
+}

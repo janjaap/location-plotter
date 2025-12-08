@@ -1,0 +1,9 @@
+.ship {
+  height: var(--canvas-height);
+  image-rendering: crisp-edges;
+  inset: 0;
+  margin: 0;
+  position: absolute;
+  width: var(--canvas-width);
+  z-index: var(--elevation-raised-z);
+}

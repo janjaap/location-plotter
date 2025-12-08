@@ -1,8 +1,8 @@
+import { clientSocket } from '@lib/clientSocket';
+import { Grid as GridClass } from '@lib/Grid';
 import { ServerEvents } from '@milgnss/utils/types';
+import { useParams } from '@providers/ParamsProvider/ParamsProvider';
 import { useEffect, useState } from 'react';
-import { clientSocket } from '../lib/clientSocket';
-import { Grid as GridClass } from '../lib/Grid';
-import { useParams } from '../providers/ParamsProvider/ParamsProvider';
 import type { UseCanvasProps } from '../types';
 import { useCenter } from './useCenter';
 
@@ -36,7 +36,7 @@ export const useCanvasGrid = ({ canvasRef }: UseCanvasProps) => {
     clientSocket.on(ServerEvents.RESET, reset);
 
     return () => {
-      clientSocket.offAny(reset);
+      clientSocket.off(ServerEvents.RESET, reset);
     };
   }, [grid, canvasRef]);
 };
