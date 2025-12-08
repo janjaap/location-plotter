@@ -28,6 +28,10 @@ export abstract class GridAxis extends Canvas {
     };
   }
 
+  set zoomLevel(newZoomLevel: number) {
+    this.zoom = newZoomLevel;
+  }
+
   baseOffset = (offset?: number) => {
     const closest = closestMinute(this.degrees, offset);
 
@@ -49,4 +53,6 @@ export abstract class GridAxis extends Canvas {
       y <= this.axisBounds.bottom
     );
   }
+
+  reset() {}
 }

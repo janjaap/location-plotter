@@ -1,5 +1,5 @@
 import { PIXELS_PER_LAT_SECOND, SECONDS_PER_MINUTE } from '@milgnss/utils/constants';
-import type { FromTo } from '@milgnss/utils/types';
+import { ModificationsEnum, type FromTo } from '@milgnss/utils/types';
 import { Canvas } from './Canvas';
 import { GridAxis } from './GridAxis';
 
@@ -13,17 +13,17 @@ export class LatAxis extends GridAxis {
 
   labelOrigin = (pos: number) => ({
     x: this.bounds.left - Canvas.LABEL_WIDTH,
-    y: this.withOffsetY(pos) - Canvas.LABEL_HEIGHT / 2,
+    y: this.labelY(pos) - Canvas.LABEL_HEIGHT / 2,
   });
 
   labelPosition = (pos: number) => ({
     x: this.bounds.left - Canvas.LABEL_WIDTH,
-    y: this.withOffsetY(pos),
+    y: this.labelY(pos),
   });
 
   labelX = () => this.bounds.left - Canvas.LABEL_WIDTH;
 
-  labelY = (pos: number) => this.withOffsetY(pos);
+  labelY = (pos: number) => this.with([ModificationsEnum.OFFSET_Y, ModificationsEnum.ZOOM], pos);
 
   labelFitsWithinBounds = (yPos: number) =>
     this.labelY(yPos) >= this.bounds.top &&

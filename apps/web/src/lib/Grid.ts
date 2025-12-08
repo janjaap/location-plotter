@@ -1,6 +1,11 @@
 import { coordsToDmsFormatted, ddToDms, ddToDmsFormatted } from '@milgnss/utils';
 import { SECONDS_PER_MINUTE } from '@milgnss/utils/constants';
-import type { FromTo, GridPoint, Orientation } from '@milgnss/utils/types';
+import {
+  ModificationsEnum,
+  type FromTo,
+  type GridPoint,
+  type Orientation,
+} from '@milgnss/utils/types';
 import { Canvas } from './Canvas';
 import { LatAxis } from './LatAxis';
 import { LongAxis } from './LongAxis';
@@ -59,26 +64,18 @@ export class Grid extends Canvas {
     this.render(true);
   }
 
+  set zoomLevel(newZoomLevel: number) {
+    this.zoom = newZoomLevel;
+
+    this.axis.lat.zoomLevel = newZoomLevel;
+    this.axis.long.zoomLevel = newZoomLevel;
+    this.render(true);
+  }
+
   private init() {
     this.centerContext();
     this.render();
   }
-
-  render = (performFullReset = false) => {
-    if (performFullReset) {
-      this.reset();
-    }
-
-    this.renderGridAxis({
-      orientation: 'lat',
-    });
-
-    this.renderGridAxis({
-      orientation: 'long',
-    });
-
-    this.renderCenterMarker();
-  };
 
   private renderCenterMarker() {
     const markerRadius = 10;
@@ -86,7 +83,11 @@ export class Grid extends Canvas {
 
     this.draw(() => {
       this.context.fillStyle = centerMarkerColor;
-      this.drawCircle(this.withOffset({ x: 0, y: 0 }), markerRadius + 2, 'fill');
+      const position = this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], {
+        x: 0,
+        y: 0,
+      });
+      this.drawCircle(position, markerRadius + 2, 'fill');
 
       this.context.lineWidth = markerLineWidth;
       this.context.strokeStyle = '#820101';
@@ -231,7 +232,10 @@ export class Grid extends Canvas {
       this.context.lineWidth = 1;
       this.context.strokeStyle = gridLineColor;
 
-      this.drawLine({ from: this.withOffset(from), to: this.withOffset(to) });
+      this.drawLine({
+        from: this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], from),
+        to: this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], to),
+      });
     });
   }
 
@@ -242,20 +246,25 @@ export class Grid extends Canvas {
       this.context.lineDashOffset = 1;
       this.context.setLineDash([4]);
 
-      this.drawLine({ from: this.withOffset(from), to: this.withOffset(to) });
+      this.drawLine({
+        from: this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], from),
+        to: this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], to),
+      });
     });
   }
 
-  private renderLabel(text: string, gridPoint: GridPoint, origin?: GridPoint) {
+  private renderLabel(text: string, gridPoint: GridPoint, position?: GridPoint) {
     this.draw(() => {
       this.context.font = '12px system-ui';
       this.context.textBaseline = 'middle';
       this.context.fillStyle = gridLabelColor;
 
-      if (origin) {
+      if (position) {
+        const { x, y } = position;
+
         this.draw(() => {
           this.context.fillStyle = gridBackgroundColor;
-          this.context.rect(origin.x, origin.y, Canvas.LABEL_WIDTH, Canvas.LABEL_HEIGHT);
+          this.context.rect(x, y, Canvas.LABEL_WIDTH, Canvas.LABEL_HEIGHT);
           this.context.fill();
         });
       }
@@ -265,12 +274,32 @@ export class Grid extends Canvas {
   }
 
   protected fitsWithinBounds(gridPoint: GridPoint) {
-    const { x, y } = gridPoint;
+    const { x, y } = this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], gridPoint);
     return (
       x >= this.bounds.left * 10 &&
       x <= this.bounds.right * 10 &&
       y >= this.bounds.top * 10 &&
       y <= this.bounds.bottom * 10
     );
+  }
+
+  render = (performFullReset = false) => {
+    if (performFullReset) {
+      this.resetCanvas();
+    }
+
+    this.renderGridAxis({
+      orientation: 'lat',
+    });
+
+    this.renderGridAxis({
+      orientation: 'long',
+    });
+
+    this.renderCenterMarker();
+  };
+
+  reset() {
+    this.render(true);
   }
 }

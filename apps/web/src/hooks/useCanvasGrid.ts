@@ -1,15 +1,18 @@
-import { clientSocket } from '@lib/clientSocket';
 import { Grid as GridClass } from '@lib/Grid';
-import { ServerEvents } from '@milgnss/utils/types';
-import { useParams } from '@providers/ParamsProvider/ParamsProvider';
 import { useEffect, useState } from 'react';
 import type { UseCanvasProps } from '../types';
 import { useCenter } from './useCenter';
+import { useOffset } from './useOffset';
+import { useReset } from './useReset';
+import { useZoomLevel } from './useZoomLevel';
 
 export const useCanvasGrid = ({ canvasRef }: UseCanvasProps) => {
   const [grid, setGrid] = useState<GridClass | null>(null);
-  const { offset } = useParams();
   const center = useCenter();
+
+  useOffset(grid);
+  useZoomLevel(grid);
+  useReset(grid);
 
   useEffect(() => {
     if (!canvasRef.current || grid || !center) return;
@@ -17,24 +20,4 @@ export const useCanvasGrid = ({ canvasRef }: UseCanvasProps) => {
     const gridInstance = new GridClass(center, canvasRef.current);
     setGrid(gridInstance);
   }, [center, grid, canvasRef]);
-
-  useEffect(() => {
-    if (!grid || (!offset.x && !offset.y)) return;
-
-    grid.offset = offset;
-  }, [grid, offset]);
-
-  useEffect(() => {
-    const reset = () => {
-      if (!grid) return;
-
-      grid.render(true);
-    };
-
-    clientSocket.on(ServerEvents.RESET, reset);
-
-    return () => {
-      clientSocket.off(ServerEvents.RESET, reset);
-    };
-  }, [grid]);
 };

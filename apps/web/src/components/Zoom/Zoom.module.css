@@ -9,11 +9,11 @@
   z-index: var(--elevation-overflow-z);
 
   button {
-    border-color: var(--color-border);
+    border-color: var(--color-grid-line);
     padding: 0.3em 0.6em;
   }
 }
 
-.zoomFactor {
+.zoomLevel {
   user-select: none;
 }

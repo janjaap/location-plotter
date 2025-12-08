@@ -3,37 +3,37 @@ import { createContext, useContext, useState, type PropsWithChildren } from 'rea
 
 type BaseContext = {
   offset: GridPoint;
-  zoomFactor: number;
+  zoomLevel: number;
 };
 
 type ParamsContext = BaseContext & {
   updateOffset: (value: GridPoint) => void;
-  updateZoomFactor: (value: number) => void;
+  updateZoomLevel: (value: number) => void;
 };
 
 const initialState: BaseContext = {
   offset: { x: 0, y: 0 },
-  zoomFactor: 1,
+  zoomLevel: 1,
 };
 
 const defaultContext: ParamsContext = {
   ...initialState,
   updateOffset: () => {},
-  updateZoomFactor: () => {},
+  updateZoomLevel: () => {},
 };
 
 const ParamsContext = createContext<ParamsContext>(defaultContext);
 
 export const ParamsProvider = ({ children }: PropsWithChildren) => {
   const [offset, setOffset] = useState(initialState.offset);
-  const [zoomFactor, setZoomFactor] = useState(initialState.zoomFactor);
+  const [zoomLevel, setZoomLevel] = useState(initialState.zoomLevel);
 
   const updateOffset = (newOffset: GridPoint) => {
     setOffset(newOffset);
   };
 
-  const updateZoomFactor = (newZoomFactor: number) => {
-    setZoomFactor(newZoomFactor);
+  const updateZoomLevel = (newZoomLevel: number) => {
+    setZoomLevel(newZoomLevel);
   };
 
   return (
@@ -41,8 +41,8 @@ export const ParamsProvider = ({ children }: PropsWithChildren) => {
       value={{
         offset,
         updateOffset,
-        updateZoomFactor,
-        zoomFactor,
+        updateZoomLevel,
+        zoomLevel,
       }}
     >
       {children}

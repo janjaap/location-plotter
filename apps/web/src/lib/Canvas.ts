@@ -1,4 +1,12 @@
-import type { CanvasBounds, Coordinate, FromTo, GridPoint } from '@milgnss/utils/types';
+import { zoomLevelToFactor } from '@milgnss/utils';
+import {
+  ModificationsEnum,
+  type CanvasBounds,
+  type Coordinate,
+  type FromTo,
+  type GridPoint,
+  type PositionPayload,
+} from '@milgnss/utils/types';
 
 type TextParams = {
   text: string;
@@ -27,6 +35,10 @@ export abstract class Canvas {
   protected previousOffset: GridPoint = { x: 0, y: 0 };
 
   protected translationOffset: GridPoint = { x: 0, y: 0 };
+
+  protected zoom = 1;
+
+  public abstract reset({ position, heading, speed }: PositionPayload): void;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     this.center = center;
@@ -141,7 +153,7 @@ export abstract class Canvas {
     this.context.clip();
   }
 
-  protected reset() {
+  protected resetCanvas() {
     this.clearCanvas();
     this.centerContext();
   }
@@ -216,6 +228,55 @@ export abstract class Canvas {
     this.context.stroke();
   }
 
+  protected with(modifications: ModificationsEnum[], value: number): number;
+  protected with(modifications: ModificationsEnum[], value: GridPoint): GridPoint;
+  protected with(
+    modifications: ModificationsEnum[],
+    value: number | GridPoint,
+  ): number | GridPoint {
+    let result = value;
+
+    if (modifications.includes(ModificationsEnum.ZOOM)) {
+      if (typeof result === 'number') {
+        result = this.withZoomFactor(result);
+      } else {
+        result = this.withZoomFactor(result);
+      }
+    }
+
+    if (typeof result === 'number') {
+      if (modifications.includes(ModificationsEnum.OFFSET_X)) {
+        return this.withOffsetX(result);
+      }
+
+      if (modifications.includes(ModificationsEnum.OFFSET_Y)) {
+        return this.withOffsetY(result);
+      }
+    } else {
+      if (modifications.includes(ModificationsEnum.OFFSET)) {
+        return this.withOffset(result);
+      }
+    }
+
+    return result;
+  }
+
+  protected withZoomFactor(value: number): number;
+  protected withZoomFactor(value: GridPoint): GridPoint;
+  protected withZoomFactor(value: number | GridPoint): number | GridPoint {
+    const isNumber = typeof value === 'number';
+
+    if (isNumber) {
+      return value * zoomLevelToFactor(this.zoom);
+    }
+
+    const { x, y } = value;
+    return {
+      x: x * zoomLevelToFactor(this.zoom),
+      y: y * zoomLevelToFactor(this.zoom),
+    };
+  }
+
   protected withOffset(gridPoint: GridPoint): GridPoint {
     const { x, y } = gridPoint;
 
@@ -225,11 +286,11 @@ export abstract class Canvas {
     };
   }
 
-  protected withOffsetX(value: number): number {
+  protected withOffsetX(value: number) {
     return value + this.translationOffset.x;
   }
 
-  protected withOffsetY(value: number): number {
+  protected withOffsetY(value: number) {
     return value + this.translationOffset.y;
   }
 }

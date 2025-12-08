@@ -25,10 +25,21 @@ export class Ship extends Canvas {
     this.centerContext();
   }
 
+  private getGridCoordinate(position: Coordinate): GridPoint {
+    const coordWithOffset = gridCoordinate({
+      position,
+      reference: this.center,
+      offset: super.offset,
+    });
+
+    return this.withZoomFactor(coordWithOffset);
+  }
+
   set offset(newOffset: GridPoint) {
     super.offset = newOffset;
 
-    this.clearDirty(this.getGridCoordinate(this.position), DIRTY_REGION_RADIUS);
+    const dirtyOrigin = this.getGridCoordinate(this.position);
+    this.clearDirty(dirtyOrigin, DIRTY_REGION_RADIUS);
 
     this.render({
       position: this.position,
@@ -43,7 +54,8 @@ export class Ship extends Canvas {
 
     // TODO: smooth animation from one heading to another
     this.draw(() => {
-      this.clearDirty(this.getGridCoordinate(this.position), DIRTY_REGION_RADIUS);
+      const dirtyOrigin = this.getGridCoordinate(this.position);
+      this.clearDirty(dirtyOrigin, DIRTY_REGION_RADIUS);
       this.clip(gridPoint, DIRTY_REGION_RADIUS);
 
       this.context.translate(gridPoint.x, gridPoint.y);
@@ -68,11 +80,7 @@ export class Ship extends Canvas {
     this.speed = speed ?? 0;
   };
 
-  private getGridCoordinate(position: Coordinate): GridPoint {
-    return gridCoordinate({
-      position,
-      reference: this.center,
-      offset: super.offset,
-    });
+  reset({ position, heading, speed }: PositionPayload) {
+    this.render({ position, heading, speed });
   }
 }

@@ -1,18 +1,22 @@
 import { PIXELS_PER_LAT_SECOND, PIXELS_PER_LONG_SECOND, SECONDS_PER_MINUTE } from './constants';
 import { ddToDms } from './ddToDms';
 import type { Coordinate, GridPoint } from './types';
+import { zoomLevelToFactor } from './zoomLevelToFactor';
 
 interface GridCoordinateParams {
   position: Coordinate;
   reference: Coordinate;
   offset?: GridPoint;
+  zoomLevel?: number;
 }
 
 export const gridCoordinate = ({
   position,
   reference,
-  offset,
+  offset = { x: 0, y: 0 },
+  zoomLevel = 1,
 }: GridCoordinateParams): GridPoint => {
+  const zoomFactor = zoomLevelToFactor(zoomLevel);
   const coordLatDms = ddToDms(position.lat);
   const coordLongDms = ddToDms(position.long);
 
@@ -29,8 +33,8 @@ export const gridCoordinate = ({
     centerLatDms.minutes * SECONDS_PER_MINUTE -
     (coordLatDms.seconds + coordLatDms.minutes * SECONDS_PER_MINUTE);
 
-  const x = Math.round(longSecondsDiff * PIXELS_PER_LONG_SECOND);
-  const y = Math.round(latSecondsDiff * PIXELS_PER_LAT_SECOND);
+  const x = Math.round(longSecondsDiff * PIXELS_PER_LONG_SECOND * zoomFactor);
+  const y = Math.round(latSecondsDiff * PIXELS_PER_LAT_SECOND * zoomFactor);
 
   if (offset) {
     return { x: x + offset.x, y: y + offset.y };

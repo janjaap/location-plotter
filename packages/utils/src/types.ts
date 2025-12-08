@@ -70,3 +70,10 @@ export interface ClientToServerEvents {
 }
 
 export type DMS = { degrees: number; minutes: number; seconds: number };
+
+export enum ModificationsEnum {
+  ZOOM = 'zoom',
+  OFFSET = 'offset',
+  OFFSET_X = 'offsetX',
+  OFFSET_Y = 'offsetY',
+}

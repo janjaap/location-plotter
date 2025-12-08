@@ -1,5 +1,5 @@
 import { PIXELS_PER_LONG_SECOND, SECONDS_PER_MINUTE } from '@milgnss/utils/constants';
-import type { FromTo } from '@milgnss/utils/types';
+import { ModificationsEnum, type FromTo } from '@milgnss/utils/types';
 import { Canvas } from './Canvas';
 import { GridAxis } from './GridAxis';
 
@@ -21,7 +21,7 @@ export class LongAxis extends GridAxis {
     y: this.labelY(),
   });
 
-  labelX = (xPos: number) => this.withOffsetX(xPos);
+  labelX = (xPos: number) => this.with([ModificationsEnum.OFFSET_X, ModificationsEnum.ZOOM], xPos);
 
   labelY = () => this.bounds.bottom + Canvas.CANVAS_PADDING;
 
