@@ -1,4 +1,4 @@
-import { gridCoordinate } from '@milgnss/utils';
+import { GeoPoint } from '@lib/GeoPoint';
 import {
   ServerEvents,
   type Coordinate,
@@ -22,25 +22,24 @@ interface Props {
 export const useSvgTrack = ({ svgRef }: Props) => {
   const [coordinates, setCoordinates] = useState<Coordinate[]>([]);
   const [viewBox, setViewBox] = useState<ViewBox>({ width: 0, height: 0 });
-  const { offset } = useParams();
+  const { offset, zoomLevel } = useParams();
   const center = useCenter();
 
   const convertPositionToGridPoint = useCallback(
     (position: Coordinate): GridPoint => {
       if (!center) return { x: 0, y: 0 };
 
-      const { x, y } = gridCoordinate({
-        position,
-        reference: center,
-        offset,
-      });
+      const { x, y } = new GeoPoint(position.lat, position.long)
+        .offset(offset)
+        .zoomLevel(zoomLevel)
+        .gridCoordinate({ reference: center });
 
       return {
         x: x + viewBox.width / 2,
         y: y + viewBox.height / 2,
       };
     },
-    [center, offset, viewBox.height, viewBox.width],
+    [center, offset, viewBox.height, viewBox.width, zoomLevel],
   );
 
   const gridStartPoint: GridPoint = useMemo(

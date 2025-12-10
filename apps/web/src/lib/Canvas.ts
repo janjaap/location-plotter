@@ -38,6 +38,7 @@ export abstract class Canvas {
 
   protected zoom = 1;
 
+  public abstract set zoomLevel(newZoomLevel: number);
   public abstract reset({ position, heading, speed }: PositionPayload): void;
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {

@@ -7,6 +7,7 @@ import {
   type Orientation,
 } from '@milgnss/utils/types';
 import { Canvas } from './Canvas';
+import { GeoPoint } from './GeoPoint';
 import { LatAxis } from './LatAxis';
 import { LongAxis } from './LongAxis';
 import {
@@ -83,10 +84,10 @@ export class Grid extends Canvas {
 
     this.draw(() => {
       this.context.fillStyle = centerMarkerColor;
-      const position = this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], {
-        x: 0,
-        y: 0,
-      });
+      const position = new GeoPoint(this.center.lat, this.center.long)
+        .offset(super.offset)
+        .zoomLevel(this.zoom)
+        .gridCoordinate({ reference: this.center });
       this.drawCircle(position, markerRadius + 2, 'fill');
 
       this.context.lineWidth = markerLineWidth;
