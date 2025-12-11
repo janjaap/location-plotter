@@ -1,43 +1,30 @@
-import { ddToDms, zoomLevelToFactor } from '@milgnss/utils';
+import { ddToDms } from '@milgnss/utils';
 import {
   PIXELS_PER_LAT_SECOND,
   PIXELS_PER_LONG_SECOND,
   SECONDS_PER_MINUTE,
 } from '@milgnss/utils/constants';
-import { type Coordinate, type GridPoint } from '@milgnss/utils/types';
+import { type Coordinate } from '@milgnss/utils/types';
+import { GridCoordinate } from './GridCoordinate';
+import { Point } from './Point';
 
-export class GeoPoint {
-  private translationOffset: GridPoint = { x: 0, y: 0 };
-  private zoomFactor = 1;
-
+export class GeoPoint extends Point {
   constructor(
     public readonly lat: number,
     public readonly long: number,
   ) {
+    super();
     return this;
   }
 
-  private withZoom = (gridPoint: GridPoint): GridPoint => ({
-    x: gridPoint.x * this.zoomFactor,
-    y: gridPoint.y * this.zoomFactor,
-  });
-
-  private withOffset = (gridPoint: GridPoint): GridPoint => ({
-    x: gridPoint.x + this.translationOffset.x,
-    y: gridPoint.y + this.translationOffset.y,
-  });
-
-  offset(newOffset: GridPoint) {
-    this.translationOffset = newOffset;
-    return this;
+  get point() {
+    return {
+      lat: this.lat,
+      long: this.long,
+    };
   }
 
-  zoomLevel(zoomLevel: number) {
-    this.zoomFactor = zoomLevelToFactor(zoomLevel);
-    return this;
-  }
-
-  gridCoordinate({ reference }: { reference: Coordinate }): GridPoint {
+  toGridCoordinate({ reference }: { reference: Coordinate }): GridCoordinate {
     const coordLatDms = ddToDms(this.lat);
     const coordLongDms = ddToDms(this.long);
 
@@ -54,9 +41,13 @@ export class GeoPoint {
       centerLatDms.minutes * SECONDS_PER_MINUTE -
       (coordLatDms.seconds + coordLatDms.minutes * SECONDS_PER_MINUTE);
 
-    const x = Math.round(longSecondsDiff * PIXELS_PER_LONG_SECOND);
-    const y = Math.round(latSecondsDiff * PIXELS_PER_LAT_SECOND);
+    const point = {
+      x: Math.round(longSecondsDiff * PIXELS_PER_LONG_SECOND),
+      y: Math.round(latSecondsDiff * PIXELS_PER_LAT_SECOND),
+    };
 
-    return this.withOffset(this.withZoom({ x, y }));
+    const { x, y } = this.withZoom(this.withOffset(point));
+
+    return new GridCoordinate(x, y);
   }
 }

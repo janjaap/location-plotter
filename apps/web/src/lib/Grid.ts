@@ -1,13 +1,9 @@
 import { coordsToDmsFormatted, ddToDms, ddToDmsFormatted } from '@milgnss/utils';
 import { SECONDS_PER_MINUTE } from '@milgnss/utils/constants';
-import {
-  ModificationsEnum,
-  type FromTo,
-  type GridPoint,
-  type Orientation,
-} from '@milgnss/utils/types';
+import { type FromTo, type GridPoint, type Orientation } from '@milgnss/utils/types';
 import { Canvas } from './Canvas';
 import { GeoPoint } from './GeoPoint';
+import { GridCoordinate } from './GridCoordinate';
 import { LatAxis } from './LatAxis';
 import { LongAxis } from './LongAxis';
 import {
@@ -37,6 +33,8 @@ type ComputeSubdivisionLabelParams = {
 };
 
 export class Grid extends Canvas {
+  private readonly markerRadius = 10;
+
   private readonly axis: {
     lat: LatAxis;
     long: LongAxis;
@@ -60,8 +58,9 @@ export class Grid extends Canvas {
   set offset(newOffset: GridPoint) {
     super.offset = newOffset;
 
-    this.axis.lat.offset = super.offset;
-    this.axis.long.offset = super.offset;
+    this.axis.lat.offset = newOffset;
+    this.axis.long.offset = newOffset;
+
     this.render(true);
   }
 
@@ -70,6 +69,7 @@ export class Grid extends Canvas {
 
     this.axis.lat.zoomLevel = newZoomLevel;
     this.axis.long.zoomLevel = newZoomLevel;
+
     this.render(true);
   }
 
@@ -79,20 +79,23 @@ export class Grid extends Canvas {
   }
 
   private renderCenterMarker() {
-    const markerRadius = 10;
-    const markerLineWidth = 1;
-
     this.draw(() => {
       this.context.fillStyle = centerMarkerColor;
       const position = new GeoPoint(this.center.lat, this.center.long)
         .offset(super.offset)
         .zoomLevel(this.zoom)
-        .gridCoordinate({ reference: this.center });
-      this.drawCircle(position, markerRadius + 2, 'fill');
+        .toGridCoordinate({ reference: this.center }).point;
 
-      this.context.lineWidth = markerLineWidth;
-      this.context.strokeStyle = '#820101';
-      this.context.stroke();
+      const cappedPosition = this.cap(position);
+
+      const { within, left, right, top } = this.markerWithinBounds(position);
+
+      if (!within) {
+        const rotation = !right ? 90 : !left ? -90 : !top ? 0 : 180;
+        this.drawSemiCircle(cappedPosition, this.markerRadius, 'fill', rotation);
+      } else {
+        this.drawCircle(cappedPosition, this.markerRadius, 'fill');
+      }
     });
   }
 
@@ -228,28 +231,42 @@ export class Grid extends Canvas {
     });
   }
 
-  private renderGridLine({ from, to }: FromTo) {
+  private renderGridLine(fromTo: FromTo) {
     this.drawInBackground(() => {
       this.context.lineWidth = 1;
       this.context.strokeStyle = gridLineColor;
 
+      const from = new GridCoordinate(fromTo.from.x, fromTo.from.y)
+        .offset(this.offset)
+        .zoomLevel(this.zoom).point;
+      const to = new GridCoordinate(fromTo.to.x, fromTo.to.y)
+        .offset(this.offset)
+        .zoomLevel(this.zoom).point;
+
       this.drawLine({
-        from: this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], from),
-        to: this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], to),
+        from,
+        to,
       });
     });
   }
 
-  private renderGridSubdivisionLine({ from, to }: FromTo) {
+  private renderGridSubdivisionLine(fromTo: FromTo) {
     this.drawInBackground(() => {
       this.context.lineWidth = 0.5;
       this.context.strokeStyle = subgridLabelColor;
       this.context.lineDashOffset = 1;
       this.context.setLineDash([4]);
 
+      const from = new GridCoordinate(fromTo.from.x, fromTo.from.y)
+        .offset(this.offset)
+        .zoomLevel(this.zoom).point;
+      const to = new GridCoordinate(fromTo.to.x, fromTo.to.y)
+        .offset(this.offset)
+        .zoomLevel(this.zoom).point;
+
       this.drawLine({
-        from: this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], from),
-        to: this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], to),
+        from,
+        to,
       });
     });
   }
@@ -274,15 +291,20 @@ export class Grid extends Canvas {
     });
   }
 
-  protected fitsWithinBounds(gridPoint: GridPoint) {
-    const { x, y } = this.with([ModificationsEnum.OFFSET, ModificationsEnum.ZOOM], gridPoint);
-    return (
-      x >= this.bounds.left * 10 &&
-      x <= this.bounds.right * 10 &&
-      y >= this.bounds.top * 10 &&
-      y <= this.bounds.bottom * 10
-    );
-  }
+  private markerWithinBounds = ({ x, y }: GridPoint) => {
+    const left = x >= -this.canvasWidth / 2 - this.markerRadius;
+    const right = x <= this.canvasWidth / 2 + this.markerRadius;
+    const top = y >= -this.canvasHeight / 2 - this.markerRadius;
+    const bottom = y <= this.canvasHeight / 2 + this.markerRadius;
+
+    return {
+      left,
+      right,
+      top,
+      bottom,
+      within: left && right && top && bottom,
+    };
+  };
 
   render = (performFullReset = false) => {
     if (performFullReset) {

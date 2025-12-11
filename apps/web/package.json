@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "DEBUG=socket.io:client* vite --host --port 3000 --force",
+    "dev": "vite --host --port 3000 --force",
+    "dev:debug": "DEBUG=socket.io:client* pnpm dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "stylelint": "stylelint '**/*.css'",

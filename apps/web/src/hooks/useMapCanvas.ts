@@ -1,3 +1,4 @@
+import { zoomLevelToFactor } from '@milgnss/utils';
 import { type GridPoint } from '@milgnss/utils/types';
 import { useRef, useState, type MouseEvent, type RefObject } from 'react';
 import { Canvas } from '../lib/Canvas';
@@ -8,12 +9,14 @@ interface Props {
 }
 
 export const useMapCanvas = ({ containerRef }: Props) => {
-  const [dragStart, setDragStart] = useState<GridPoint | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const { updateOffset, offset } = useParams();
+  const { updateOffset, offset, zoomLevel } = useParams();
   const baseOffsetRef = useRef<GridPoint>(offset);
+  const dragStartRef = useRef<GridPoint | null>(null);
 
-  const mouseCoord = (event: MouseEvent) => {
+  const zoomFactor = zoomLevelToFactor(zoomLevel);
+
+  const mouseCoord = (event: MouseEvent): GridPoint | undefined => {
     if (!containerRef.current) return;
 
     const centerX = containerRef.current.clientWidth / 2;
@@ -35,31 +38,32 @@ export const useMapCanvas = ({ containerRef }: Props) => {
 
     if (!coord) return;
 
-    setDragStart(coord);
     setIsDragging(true);
+    dragStartRef.current = coord;
     baseOffsetRef.current = offset;
   };
 
   const onDrag = (event: MouseEvent<HTMLDivElement>) => {
-    if (!containerRef.current || !dragStart || !isDragging) return;
+    if (!containerRef.current || !dragStartRef.current || !isDragging) return;
 
     const coord = mouseCoord(event);
 
     if (!coord) return;
 
-    const { x, y } = coord;
-
-    const diffX = x - dragStart.x;
-    const diffY = y - dragStart.y;
+    // Calculate the difference adjusted for zoom
+    const diffX = (coord.x - dragStartRef.current.x) / zoomFactor;
+    const diffY = (coord.y - dragStartRef.current.y) / zoomFactor;
 
     const offsetX = baseOffsetRef.current.x + diffX;
     const offsetY = baseOffsetRef.current.y + diffY;
 
-    if (!Canvas.validOffset({ x: offsetX, y: offsetY })) {
+    const newOffset = { x: offsetX, y: offsetY };
+
+    if (!Canvas.validOffset(newOffset)) {
       return;
     }
 
-    updateOffset({ x: offsetX, y: offsetY });
+    updateOffset(newOffset);
   };
 
   const onDragEnd = () => {

@@ -32,7 +32,7 @@ export const useSvgTrack = ({ svgRef }: Props) => {
       const { x, y } = new GeoPoint(position.lat, position.long)
         .offset(offset)
         .zoomLevel(zoomLevel)
-        .gridCoordinate({ reference: center });
+        .toGridCoordinate({ reference: center });
 
       return {
         x: x + viewBox.width / 2,

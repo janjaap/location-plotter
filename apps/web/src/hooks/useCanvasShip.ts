@@ -5,11 +5,13 @@ import { clientSocket } from '../lib/clientSocket';
 import type { UseCanvasProps } from '../types';
 import { useOffset } from './useOffset';
 import { useReset } from './useReset';
+import { useSocketReconnect } from './useSocketReconnect';
 import { useZoomLevel } from './useZoomLevel';
 
 export const useCanvasShip = ({ canvasRef }: UseCanvasProps) => {
   const [ship, setShip] = useState<ShipClass | null>(null);
 
+  useSocketReconnect();
   useOffset(ship);
   useZoomLevel(ship);
   useReset(ship);
@@ -24,7 +26,9 @@ export const useCanvasShip = ({ canvasRef }: UseCanvasProps) => {
     };
 
     const renderShip = ({ position, heading, speed }: PositionPayload) => {
-      if (!ship) return;
+      if (!ship) {
+        return;
+      }
 
       ship.render({ position, heading, speed });
     };

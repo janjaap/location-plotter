@@ -2,7 +2,8 @@
   "name": "@milgnss/socket",
   "version": "1.0.0",
   "scripts": {
-    "dev": "DEBUG=socket.io:server* pnpm dlx tsx index.ts",
+    "dev": "pnpm dlx tsx index.ts",
+    "dev:debug": "DEBUG=engine,socket.io* pnpm dev",
     "test": "vitest ./ --config ../../vite.config.ts"
   },
   "keywords": [],

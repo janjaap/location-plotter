@@ -1,6 +1,6 @@
 export const gridBackgroundColor = '#16191d';
 export const gridLineColor = '#424548';
-export const trackColor = '#99c4dc';
+export const trackColor = '#99c4dcb3';
 export const trackIndicatorColor = '#99c4dc';
 export const centerMarkerColor = '#ff0000';
 export const gridLabelColor = '#6f7275';

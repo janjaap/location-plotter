@@ -24,7 +24,9 @@ export abstract class Canvas {
 
   static OFFSET_CLAMP = 1_024;
 
-  protected canvas: HTMLCanvasElement;
+  private canvas: HTMLCanvasElement;
+
+  private translationOffset: GridPoint = { x: 0, y: 0 };
 
   protected center: Coordinate;
 
@@ -32,14 +34,19 @@ export abstract class Canvas {
 
   protected minuteDivisions = 5;
 
-  protected previousOffset: GridPoint = { x: 0, y: 0 };
-
-  protected translationOffset: GridPoint = { x: 0, y: 0 };
-
   protected zoom = 1;
 
   public abstract set zoomLevel(newZoomLevel: number);
   public abstract reset({ position, heading, speed }: PositionPayload): void;
+
+  static validOffset(offset: GridPoint) {
+    return (
+      offset.x > -Canvas.OFFSET_CLAMP &&
+      offset.x < Canvas.OFFSET_CLAMP &&
+      offset.y > -Canvas.OFFSET_CLAMP &&
+      offset.y < Canvas.OFFSET_CLAMP
+    );
+  }
 
   constructor(center: Coordinate, canvas: HTMLCanvasElement) {
     this.center = center;
@@ -55,12 +62,14 @@ export abstract class Canvas {
     this.context.textRendering = 'optimizeLegibility';
   }
 
-  static validOffset(offset: GridPoint) {
-    return (
-      offset.x > -Canvas.OFFSET_CLAMP &&
-      offset.x < Canvas.OFFSET_CLAMP &&
-      offset.y > -Canvas.OFFSET_CLAMP &&
-      offset.y < Canvas.OFFSET_CLAMP
+  private clearCanvas() {
+    this.context.rotate(0);
+    this.context.beginPath();
+    this.context.clearRect(
+      -this.canvas.width / 2,
+      -this.canvas.height / 2,
+      this.canvas.width,
+      this.canvas.height,
     );
   }
 
@@ -73,11 +82,6 @@ export abstract class Canvas {
       return;
     }
 
-    if (this.previousOffset.x === newOffset.x && this.previousOffset.y === newOffset.y) {
-      return;
-    }
-
-    this.previousOffset = this.translationOffset;
     this.translationOffset = newOffset;
   }
 
@@ -89,12 +93,31 @@ export abstract class Canvas {
     return this.canvas.width;
   }
 
+  get absoluteBounds(): CanvasBounds {
+    return {
+      top: (this.canvasHeight / 2) * -1,
+      right: this.canvasWidth / 2,
+      bottom: this.canvasHeight / 2,
+      left: (this.canvasWidth / 2) * -1,
+    };
+  }
+
   get bounds(): CanvasBounds {
     return {
       top: (this.canvasHeight / 2 - Canvas.CANVAS_PADDING) * -1,
       right: this.canvasWidth / 2 - Canvas.CANVAS_PADDING,
       bottom: this.canvasHeight / 2 - Canvas.LABEL_HEIGHT,
       left: (this.canvasWidth / 2 - Canvas.CANVAS_PADDING - Canvas.LABEL_WIDTH) * -1,
+    };
+  }
+
+  protected cap(position: GridPoint, margin = 0): GridPoint {
+    const { x, y } = position;
+    const { top, right, bottom, left } = this.absoluteBounds;
+
+    return {
+      x: Math.min(Math.max(x, left - margin), right - margin),
+      y: Math.min(Math.max(y, top - margin), bottom - margin),
     };
   }
 
@@ -142,7 +165,7 @@ export abstract class Canvas {
     const fromX = Math.round(x);
     const fromY = Math.round(y);
 
-    this.context.rect(fromX, fromY, width, height);
+    this.context.rect(fromX - width, fromY - height, width * 2, height * 2);
     this.context.clip();
   }
 
@@ -166,17 +189,6 @@ export abstract class Canvas {
     this.context.translate(this.canvas.width / 2, this.canvas.height / 2);
   }
 
-  private clearCanvas() {
-    this.context.rotate(0);
-    this.context.beginPath();
-    this.context.clearRect(
-      -this.canvas.width / 2,
-      -this.canvas.height / 2,
-      this.canvas.width,
-      this.canvas.height,
-    );
-  }
-
   protected draw(drawFunc: () => void) {
     this.context.save();
 
@@ -191,6 +203,28 @@ export abstract class Canvas {
 
     this.context.beginPath();
     this.context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    this.context.closePath();
+
+    if (appearance === 'fill') {
+      this.context.fill();
+    } else {
+      this.context.stroke();
+    }
+  }
+
+  protected drawSemiCircle(
+    { x, y }: GridPoint,
+    radius: number,
+    appearance: 'fill' | 'stroke',
+    rotation = 0,
+  ) {
+    const centerX = Math.round(x);
+    const centerY = Math.round(y);
+    const starAngle = (rotation * Math.PI) / 180;
+    const endAngle = Math.PI + (rotation * Math.PI) / 180;
+
+    this.context.beginPath();
+    this.context.arc(centerX, centerY, radius, starAngle, endAngle);
     this.context.closePath();
 
     if (appearance === 'fill') {
@@ -237,25 +271,25 @@ export abstract class Canvas {
   ): number | GridPoint {
     let result = value;
 
+    if (typeof result === 'number') {
+      if (modifications.includes(ModificationsEnum.OFFSET_X)) {
+        result = this.withOffsetX(result);
+      }
+
+      if (modifications.includes(ModificationsEnum.OFFSET_Y)) {
+        result = this.withOffsetY(result);
+      }
+    } else {
+      if (modifications.includes(ModificationsEnum.OFFSET)) {
+        result = this.withOffset(result);
+      }
+    }
+
     if (modifications.includes(ModificationsEnum.ZOOM)) {
       if (typeof result === 'number') {
         result = this.withZoomFactor(result);
       } else {
         result = this.withZoomFactor(result);
-      }
-    }
-
-    if (typeof result === 'number') {
-      if (modifications.includes(ModificationsEnum.OFFSET_X)) {
-        return this.withOffsetX(result);
-      }
-
-      if (modifications.includes(ModificationsEnum.OFFSET_Y)) {
-        return this.withOffsetY(result);
-      }
-    } else {
-      if (modifications.includes(ModificationsEnum.OFFSET)) {
-        return this.withOffset(result);
       }
     }
 

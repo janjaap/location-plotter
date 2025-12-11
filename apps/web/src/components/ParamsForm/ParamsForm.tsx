@@ -1,15 +1,10 @@
 import { ddToDmsFormatted } from '@milgnss/utils';
-import {
-  ClientEvents,
-  ServerEvents,
-  type PositionPayload,
-  type StartPositionPayload,
-} from '@milgnss/utils/types';
+import { ClientEvents, ServerEvents, type PositionPayload } from '@milgnss/utils/types';
 import { useActionState, useEffect, useState, type ChangeEvent, type MouseEvent } from 'react';
 import { clientSocket } from '../../lib/clientSocket';
 import styles from './ParamsForm.module.css';
 
-const startPosition: StartPositionPayload = {
+const startPosition: PositionPayload = {
   position: {
     lat: 52.95138889,
     long: 4.79861045693137,
@@ -26,7 +21,7 @@ const startPosition: StartPositionPayload = {
 
 export const ParamsForm = () => {
   const [isTracking, setIsTracking] = useState(false);
-  const [formState, setFormState] = useState<StartPositionPayload & PositionPayload>(startPosition);
+  const [formState, setFormState] = useState<PositionPayload>(startPosition);
 
   useEffect(() => {
     const updatePosition = ({ position, distance, heading }: PositionPayload) => {

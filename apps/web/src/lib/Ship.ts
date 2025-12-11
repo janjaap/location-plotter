@@ -10,7 +10,6 @@ import { trackIndicatorColor } from './tokens';
 
 const OUTER_CIRCLE_RADIUS = 14;
 const INNER_CIRCLE_RADIUS = 6;
-const DIRTY_REGION_RADIUS = 45;
 
 export class Ship extends Canvas {
   private heading: number;
@@ -30,11 +29,11 @@ export class Ship extends Canvas {
     this.centerContext();
   }
 
-  private getGridCoordinate = (position: Coordinate): TGridPoint =>
+  private getGridCoordinate = (position: Coordinate, positionOffset = super.offset) =>
     new GeoPoint(position.lat, position.long)
-      .offset(super.offset)
+      .offset(positionOffset)
       .zoomLevel(this.zoom)
-      .gridCoordinate({ reference: this.center });
+      .toGridCoordinate({ reference: this.center });
 
   private clearPosition(positionOffset = super.offset) {
     const offsetDiff = {
@@ -44,15 +43,25 @@ export class Ship extends Canvas {
 
     const distance = Math.max(
       Math.max(Math.abs(offsetDiff.x), Math.abs(offsetDiff.y)),
-      DIRTY_REGION_RADIUS,
+      this.clipRegion,
     );
 
-    const origin = new GeoPoint(this.position.lat, this.position.long)
-      .offset({ x: positionOffset.x + offsetDiff.x, y: positionOffset.y + offsetDiff.y })
-      .zoomLevel(this.zoom)
-      .gridCoordinate({ reference: this.center });
+    const previousOffset = {
+      x: positionOffset.x + offsetDiff.x,
+      y: positionOffset.y + offsetDiff.y,
+    };
+
+    const origin = this.getGridCoordinate(this.position, previousOffset);
 
     this.clearDirty(origin, distance);
+  }
+
+  private get clipRegion() {
+    return Math.max(OUTER_CIRCLE_RADIUS * 2, this.speedVector);
+  }
+
+  private get speedVector() {
+    return (this.speed ?? 0) * 4;
   }
 
   set zoomLevel(newZoomLevel: number) {
@@ -88,6 +97,7 @@ export class Ship extends Canvas {
 
     // TODO: smooth animation from one heading to another
     this.draw(() => {
+      this.clip(newPosition, this.clipRegion);
       this.context.translate(newPosition.x, newPosition.y);
       this.context.rotate((Math.PI * bearing) / 180);
 
@@ -100,7 +110,7 @@ export class Ship extends Canvas {
       if (speed) {
         this.drawLine({
           from: { x: 0, y: 0 },
-          to: { x: 0, y: -40 },
+          to: { x: 0, y: -this.speedVector },
         });
       }
     });

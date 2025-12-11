@@ -23,7 +23,12 @@ export const Zoom = () => {
         -
       </button>
       <span className={styles.zoomLevel}>{zoomLevel}</span>
-      <button onClick={increaseZoom}>+</button>
+      <button
+        disabled={zoomLevel === 10}
+        onClick={increaseZoom}
+      >
+        +
+      </button>
     </div>
   );
 };
