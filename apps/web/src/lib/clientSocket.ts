@@ -2,7 +2,7 @@ import { type ClientToServerEvents, type ServerToClientEvents } from '@milgnss/u
 import { io, Socket } from 'socket.io-client';
 
 export const clientSocket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-  'http://localhost:5000',
+  import.meta.env.VITE_SOCKET_IO_URL,
   {
     reconnectionAttempts: 100,
     reconnectionDelay: 12_500,
