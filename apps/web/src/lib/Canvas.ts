@@ -8,26 +8,37 @@ import {
   type PositionPayload,
 } from '@milgnss/utils/types';
 
-type TextParams = {
-  text: string;
-  gridPoint: GridPoint;
-  maxWidth?: number;
-  clearBefore?: boolean;
-};
-
 export abstract class Canvas {
+  /**
+   * Padding around the canvas in pixels
+   */
   static CANVAS_PADDING = 10;
 
+  /**
+   * Latitude/Longitude label height in pixels
+   */
   static LABEL_HEIGHT = 20;
 
+  /**
+   * Latitude/Longitude label width in pixels
+   */
   static LABEL_WIDTH = 80;
 
+  /**
+   * Maximum offset in pixels in any direction (x or y)
+   */
   static OFFSET_CLAMP = 1_024;
 
   private canvas: HTMLCanvasElement;
 
+  /**
+   * Offset in pixels applied to all drawings on the canvas
+   */
   private translationOffset: GridPoint = { x: 0, y: 0 };
 
+  /**
+   * Starting coordinate at the center of the canvas
+   */
   protected center: Coordinate;
 
   protected context!: CanvasRenderingContext2D;
@@ -111,6 +122,9 @@ export abstract class Canvas {
     };
   }
 
+  /**
+   * Cap the given position to be within the canvas bounds
+   */
   protected cap(position: GridPoint, margin = 0): GridPoint {
     const { x, y } = position;
     const { top, right, bottom, left } = this.absoluteBounds;
@@ -121,26 +135,19 @@ export abstract class Canvas {
     };
   }
 
-  protected text({
-    text,
-    gridPoint,
-    maxWidth = Canvas.LABEL_WIDTH,
-    clearBefore = false,
-  }: TextParams) {
-    const x = Math.round(gridPoint.x);
-    const y = Math.round(gridPoint.y);
+  /**
+   * Render text at the given grid point
+   */
+  protected text(text: string, position: GridPoint) {
+    const x = Math.round(position.x);
+    const y = Math.round(position.y);
 
-    if (clearBefore) {
-      this.clearRect(
-        { x: gridPoint.x, y: gridPoint.y - Canvas.LABEL_HEIGHT / 2 },
-        Canvas.LABEL_WIDTH,
-        Canvas.LABEL_HEIGHT,
-      );
-    }
-
-    this.context.fillText(text, x, y, maxWidth);
+    this.context.fillText(text, x, y, Canvas.LABEL_WIDTH);
   }
 
+  /**
+   * Clear an area of the canvas
+   */
   protected clearRect(gridPoint: GridPoint, width: number, height: number) {
     const { x, y } = gridPoint;
 
@@ -150,6 +157,10 @@ export abstract class Canvas {
     this.context.clearRect(fromX, fromY, width, height);
   }
 
+  /**
+   * Clear an area of the canvas that contains a drawn object
+   * To be used for objects that traverse the canvas
+   */
   protected clearDirty(gridPoint: GridPoint, radius: number) {
     const { x, y } = gridPoint;
 
@@ -177,11 +188,17 @@ export abstract class Canvas {
     this.context.clip();
   }
 
+  /**
+   * Restore the canvas to its initial state by clearing it and centering the context
+   */
   protected resetCanvas() {
     this.clearCanvas();
     this.centerContext();
   }
 
+  /**
+   * Center the canvas context origin to the center of the canvas
+   */
   protected centerContext() {
     this.canvas.width = this.canvas.clientWidth;
     this.canvas.height = this.canvas.clientHeight;
@@ -189,6 +206,9 @@ export abstract class Canvas {
     this.context.translate(this.canvas.width / 2, this.canvas.height / 2);
   }
 
+  /**
+   * Drawing wrapper that saves and restores the canvas context state
+   */
   protected draw(drawFunc: () => void) {
     this.context.save();
 
@@ -197,6 +217,10 @@ export abstract class Canvas {
     this.context.restore();
   }
 
+  /**
+   * Draw circle at the given grid point
+   * To be called within a draw() wrapper
+   */
   protected drawCircle({ x, y }: GridPoint, radius: number, appearance: 'fill' | 'stroke') {
     const centerX = Math.round(x);
     const centerY = Math.round(y);
@@ -212,6 +236,10 @@ export abstract class Canvas {
     }
   }
 
+  /**
+   * Draw semi-circle at the given grid point
+   * To be called within a draw() wrapper
+   */
   protected drawSemiCircle(
     { x, y }: GridPoint,
     radius: number,
@@ -234,6 +262,10 @@ export abstract class Canvas {
     }
   }
 
+  /**
+   * Drawing wrapper that saves and restores the canvas context state
+   * Renders in the background (below existing drawings)
+   */
   protected drawInBackground(drawFunc: () => void) {
     this.context.save();
     this.context.globalCompositeOperation = 'destination-over';
@@ -243,6 +275,10 @@ export abstract class Canvas {
     this.context.restore();
   }
 
+  /**
+   * Draw line from one grid point to another
+   * To be called within a draw() wrapper
+   */
   protected drawLine({ from, to }: FromTo, clearBefore = false) {
     const fromX = Math.round(from.x);
     const fromY = Math.round(from.y);

@@ -7,3 +7,5 @@ export interface UseCanvasProps {
 }
 
 export type CanvasEntity = Ship | Grid | null;
+
+export type Direction = -1 | 1;

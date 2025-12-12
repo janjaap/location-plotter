@@ -17,7 +17,7 @@ export const useSocketReconnect = () => {
     if (!position) return;
 
     const reconnect = () => {
-      debugger;
+      // debugger;
       if (!clientSocket.recovered) return;
 
       clientSocket.emit(ClientEvents.START, position);
@@ -28,6 +28,7 @@ export const useSocketReconnect = () => {
 
     return () => {
       clientSocket.off('connect', reconnect);
+      clientSocket.off('disconnect', reconnect);
     };
   }, [position]);
 };

@@ -148,11 +148,6 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
 
     .on(ClientEvents.RESET, () => {
       socket.emit(ServerEvents.RESET, initialPosition);
-    })
-
-    .on(ClientEvents.ERROR, (err: Error) => {
-      console.error(err);
-      cleanup();
     });
 });
 

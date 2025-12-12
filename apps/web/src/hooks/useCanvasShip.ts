@@ -1,15 +1,15 @@
-import { ServerEvents, type PositionPayload } from '@milgnss/utils/types';
 import { useEffect, useState } from 'react';
 import { Ship as ShipClass } from '../lib/Ship';
-import { clientSocket } from '../lib/clientSocket';
 import type { UseCanvasProps } from '../types';
 import { useOffset } from './useOffset';
+import { usePosition } from './usePosition';
 import { useReset } from './useReset';
 import { useSocketReconnect } from './useSocketReconnect';
 import { useZoomLevel } from './useZoomLevel';
 
 export const useCanvasShip = ({ canvasRef }: UseCanvasProps) => {
   const [ship, setShip] = useState<ShipClass | null>(null);
+  const { position, heading, speed } = usePosition();
 
   useSocketReconnect();
   useOffset(ship);
@@ -17,28 +17,16 @@ export const useCanvasShip = ({ canvasRef }: UseCanvasProps) => {
   useReset(ship);
 
   useEffect(() => {
-    const initShip = ({ position, heading }: PositionPayload) => {
-      if (!canvasRef.current) return;
+    if (!canvasRef.current || !position || !heading || ship) return;
 
-      const shipInstance = new ShipClass(heading, position, canvasRef.current);
+    const shipInstance = new ShipClass(heading, position, canvasRef.current);
 
-      setShip(shipInstance);
-    };
+    setShip(shipInstance);
+  }, [canvasRef, heading, position, ship]);
 
-    const renderShip = ({ position, heading, speed }: PositionPayload) => {
-      if (!ship) {
-        return;
-      }
+  useEffect(() => {
+    if (!position || !heading || !speed || !ship) return;
 
-      ship.render({ position, heading, speed });
-    };
-
-    clientSocket.on(ServerEvents.INIT, initShip);
-    clientSocket.on(ServerEvents.POSITION, renderShip);
-
-    return () => {
-      clientSocket.off(ServerEvents.INIT, initShip);
-      clientSocket.off(ServerEvents.POSITION, renderShip);
-    };
-  }, [canvasRef, ship]);
+    ship.render({ position, heading, speed });
+  }, [position, heading, speed, ship]);
 };

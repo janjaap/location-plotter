@@ -7,14 +7,16 @@ import styles from './ParamsForm.module.css';
 const startPosition: PositionPayload = {
   position: {
     lat: 52.95138889,
-    long: 4.79861045693137,
+    long: 4.8134534543,
   },
 
   // middle of minutes
-  // lat: 52.95833333,
-  // long: 4.775,
-  // long: 2.4340053543,
+  // position: {
+  //   lat: 52.95833333,
+  //   long: 4.775,
+  // },
 
+  //   long: 2.4340053543,
   speed: 12,
   heading: 289,
 };
@@ -68,6 +70,8 @@ export const ParamsForm = () => {
         [name]: value,
       };
 
+      clientSocket.emit(ClientEvents.INIT, newState);
+
       return newState;
     });
   }
@@ -91,11 +95,6 @@ export const ParamsForm = () => {
     }
 
     updateStateValue(name, Number(value));
-
-    clientSocket.emit(ClientEvents.INIT, {
-      ...formState,
-      [name]: Number(value),
-    });
   }
 
   function stopTracking(event: MouseEvent<HTMLButtonElement>) {

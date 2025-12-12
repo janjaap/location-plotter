@@ -11,6 +11,15 @@ export type Dimensions = { width: number; height: number };
 
 export type Orientation = 'lat' | 'long';
 
+export type DMS = { degrees: number; minutes: number; seconds: number };
+
+export enum ModificationsEnum {
+  ZOOM = 'zoom',
+  OFFSET = 'offset',
+  OFFSET_X = 'offsetX',
+  OFFSET_Y = 'offsetY',
+}
+
 /** Socket */
 export enum ServerEvents {
   DISCONNECTED = 'disconnected',
@@ -23,7 +32,6 @@ export enum ServerEvents {
 export enum ClientEvents {
   CLOSE = 'close',
   DISCONNECT = 'disconnect',
-  ERROR = 'error',
   INIT = 'init',
   RESET = 'reset',
   START = 'start',
@@ -50,18 +58,8 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   [ClientEvents.CLOSE]: () => void;
   [ClientEvents.DISCONNECT]: (reason: string) => void;
-  [ClientEvents.ERROR]: (err: Error) => void;
   [ClientEvents.INIT]: (payload: PositionPayload) => void;
   [ClientEvents.RESET]: () => void;
   [ClientEvents.START]: (payload: PositionPayload) => void;
   [ClientEvents.STOP]: () => void;
-}
-
-export type DMS = { degrees: number; minutes: number; seconds: number };
-
-export enum ModificationsEnum {
-  ZOOM = 'zoom',
-  OFFSET = 'offset',
-  OFFSET_X = 'offsetX',
-  OFFSET_Y = 'offsetY',
 }
